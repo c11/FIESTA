@@ -32,7 +32,7 @@ Depends:
 Imports:
     data.table,
     DBI,
-    FIESTAutils (>= 1.1.7),
+    FIESTAutils (>= 1.1.8.9000),
     gdalraster,
     grDevices,
     graphics,
@@ -41,6 +41,7 @@ Imports:
     sf,
     sqldf,
     utils
+Remotes: USDAForestService/FIESTAutils
 Suggests: 
     knitr,
     geodata,
@@ -50,7 +51,9 @@ Suggests:
 VignetteBuilder: knitr
 License: GPL-3
 Copyright: See file COPYRIGHTS for details. 
+URL: https://usdaforestservice.github.io/FIESTA/,
+    https://github.com/USDAForestService/FIESTA
+BugReports: https://github.com/USDAForestService/FIESTA/issues
 LazyData: true
-SystemRequirements: C++11
 Encoding: UTF-8
 RoxygenNote: 7.2.3

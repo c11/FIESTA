@@ -131,7 +131,6 @@ DBgetEvalid <- function(states = NULL,
   if (gui) {
     evalCur=evalAll=evalType <- NULL
   }
-  exit <- function() { invokeRestart("abort") }
   
   
   ## Set global variables
@@ -757,8 +756,7 @@ DBgetEvalid <- function(states = NULL,
         ppsanm <- chkdbtab(dbtablst, ppsa_layer)
         if (is.null(ppsanm)) {
           warning("must include pop_plot_stratum_assgn table in database when eval='FIA'\n")
-          message("database tables: ", toString(dbtablst))
-          exit()
+          stop("database tables: ", toString(dbtablst))
         }
 
         ## Create lookup and get code for evalType
@@ -911,6 +909,16 @@ DBgetEvalid <- function(states = NULL,
             ## Subset POP_EVAL/POP_EVAL_GRP by state and inventory type
   #          popevaltab <- POP_EVAL[POP_EVAL$EVAL_GRP_CN %in% POP_EVAL_GRPstcd$CN,]
             popevalgrptab <- POP_EVAL_GRPstcd[POP_EVAL_GRPstcd$EVAL_GRP_Endyr %in% invtype.invyrs,]
+			if (nrow(popevalgrptab) == 0) {
+	          if (nrow(POP_EVAL_GRPstcd) == 0) {
+                returnlst <- list(states=states, rslst=rslst,
+                		evalidlist=evalidlist,
+                		invtype=invtype, invyrtab=invyrtab,
+                		invyrs=invyrs, evalType=evalTypelist,
+                		FS_FIADB=FS_FIADB)		  
+		      }
+	          popevalgrptab <- POP_EVAL_GRPstcd
+	        }
             popevaltab <- POP_EVAL[POP_EVAL$EVAL_GRP_CN %in% popevalgrptab$CN,]
   #          popevaltab <- POP_EVAL[POP_EVAL$EVAL_GRP_CN %in% POP_EVAL_GRPstcd$CN &
   #		  POP_EVAL$EVAL_TYP %in% evalTypelist[[state]],]

@@ -1,9 +1,10 @@
-check.popdataVOL <- function(tabs, tabIDs, pltassgnx, pltassgnid,
-	pfromqry, palias, pjoinid, whereqry, adj, ACI, pltx=NULL, puniqueid="CN", 
-	dsn=NULL, dbconn=NULL, condid="CONDID", areawt="CONDPROP_UNADJ", areawt2 = NULL,
-	MICRO_BREAKPOINT_DIA=5, MACRO_BREAKPOINT_DIA=NULL, diavar="DIA",
-	areawt_micr="MICRPROP_UNADJ", areawt_subp="SUBPPROP_UNADJ", areawt_macr="MACRPROP_UNADJ",
-	nonsamp.cfilter=NULL, nullcheck=FALSE, cvars2keep=NULL, gui=FALSE){
+check.popdataVOL <- function(tabs, tabIDs, pltassgnx, pltassgnid, 
+    pfromqry, palias, pjoinid, whereqry, adj, ACI, pltx=NULL, puniqueid="CN",
+    dsn=NULL, dbconn=NULL, condid="CONDID", areawt="CONDPROP_UNADJ", areawt2 = NULL,
+    MICRO_BREAKPOINT_DIA=5, MACRO_BREAKPOINT_DIA=NULL, diavar="DIA",
+    areawt_micr="MICRPROP_UNADJ", areawt_subp="SUBPPROP_UNADJ",   
+    areawt_macr="MACRPROP_UNADJ", defaultVars=FALSE,
+    nonsamp.cfilter=NULL, nullcheck=FALSE, cvars2keep=NULL, gui=FALSE){
 
   ###################################################################################
   ## DESCRIPTION: Checks data inputs for AREA/VOL estimation
@@ -67,17 +68,22 @@ check.popdataVOL <- function(tabs, tabIDs, pltassgnx, pltassgnid,
       dbconn <- DBtestSQLite(dsn, dbconnopen=TRUE, showlist=FALSE)
     }
     tablst <- DBI::dbListTables(dbconn)
+    #DBI::dbDisconnect(dbconn)
     chk <- TRUE
     SCHEMA.<- NULL
     dbqueries <- list()
 
-
+ 
     ## Create query for cond
     #########################################
     if (all(!is.null(cond), is.character(cond), cond %in% tablst)) {
       dbcvars <- DBI::dbListFields(dbconn, cond)
-      cvars <-  DBvars.default()$condvarlst
-      cvars <- cvars[cvars %in% dbcvars]
+      if (defaultVars) {
+        cvars <-  DBvars.default()$condvarlst
+        cvars <- cvars[cvars %in% dbcvars]
+      } else {
+        cvars <- dbcvars
+      }
 
       if (is.null(pfromqry)) {
         cfromqry <- paste0(SCHEMA., cond, " c")
@@ -95,10 +101,14 @@ check.popdataVOL <- function(tabs, tabIDs, pltassgnx, pltassgnid,
     #########################################
     if (all(!is.null(tree), is.character(tree), tree %in% tablst)) {
       dbtvars <- DBI::dbListFields(dbconn, tree)
-      treevars <-  DBvars.default(istree=TRUE)$treevarlst
-      tsumvars <-  DBvars.default(istree=TRUE)$tsumvarlst
-      tvars <- unique(c(treevars, tsumvars))
-      tvars <- tvars[tvars %in% dbtvars]
+
+      if (defaultVars) {
+        treevars <-  DBvars.default(istree=TRUE)$treevarlst
+        tsumvars <-  DBvars.default(istree=TRUE)$tsumvarlst
+        tvars <- unique(c(treevars, tsumvars))
+      } else {
+        tvars <- dbtvars
+      }
 
       if (!is.null(pfromqry)) {
         tfromqry <- paste0(pfromqry, " JOIN ", SCHEMA., tree,
@@ -132,12 +142,12 @@ check.popdataVOL <- function(tabs, tabIDs, pltassgnx, pltassgnid,
   if (is.null(cond)) {
     stop("must include cond table")
   }
-  condx <- suppressMessages(pcheck.table(cond, tab_dsn=dsn, 
+  condx <- pcheck.table(cond, tab_dsn=dsn, conn=dbconn,
            tabnm="cond", caption="cond table?",
-		nullcheck=nullcheck, tabqry=condqry, returnsf=FALSE))
-  treex <- suppressMessages(pcheck.table(tree, tab_dsn=dsn, 
+		nullcheck=nullcheck, tabqry=condqry, returnsf=FALSE)
+  treex <- pcheck.table(tree, tab_dsn=dsn, conn=dbconn,
            tabnm="tree", caption="Tree table?",
-		nullcheck=nullcheck, gui=gui, tabqry=treeqry, returnsf=FALSE))
+		nullcheck=nullcheck, gui=gui, tabqry=treeqry, returnsf=FALSE)
  
   ## Define cdoms2keep
   cdoms2keep <- names(condx)
@@ -437,8 +447,10 @@ check.popdataVOL <- function(tabs, tabIDs, pltassgnx, pltassgnid,
   ###################################################################################
   ## Check seedling data
   ###################################################################################
-  seedx <- pcheck.table(seed, tab_dsn=dsn, tabnm="seed", caption="Seedling table?",
-		nullcheck=nullcheck, gui=gui, tabqry=seedqry, returnsf=FALSE)
+  seedx <- pcheck.table(seed, tab_dsn=dsn, conn=dbconn, 
+                        tabnm="seed", caption="Seedling table?", 
+                        nullcheck=nullcheck, gui=gui, 
+                        tabqry=seedqry, returnsf=FALSE)
   if (!is.null(seedx)) {
     suniqueid <- tabIDs[["seed"]]
 

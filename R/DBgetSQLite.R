@@ -39,7 +39,8 @@ DBgetSQLite <- function (states = NULL,
 
   ## Set options
   opts <- options()
-  options(timeout = max(5000, getOption("timeout")))
+  options(timeout = max(100000, getOption("timeout")))
+  #options(download.file.method="libcurl", url.method="libcurl")
   on.exit(options(opts))
 
   ## Set URL where data files are
@@ -59,6 +60,7 @@ DBgetSQLite <- function (states = NULL,
   ## Check outfolder
   outfolder <- pcheck.outfolder(outfolder)
 
+  filenmlst <- list()
   for (st in stabbrs) {
     ## Create file name to download
     fn <- paste0(downloadfn, "/SQLite_FIADB_", st, ".zip")
@@ -70,7 +72,7 @@ DBgetSQLite <- function (states = NULL,
     tryCatch(utils::download.file(fn, outfn, mode="wb"),
 			error=function(e) {
                 stop(e) })
-    filenm <- utils::unzip(outfn, exdir=outfolder)
+    filenmlst[st] <- utils::unzip(outfn, exdir=outfolder)
   }
-  return(filenm)
+  return(filenmlst)
 }

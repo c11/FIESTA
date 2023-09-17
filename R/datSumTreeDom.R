@@ -137,6 +137,8 @@
 #' @param savedata_opts List. See help(savedata_options()) for a list
 #' of options. Only used when savedata = TRUE. If out_layer = NULL,
 #' default = 'tdomsum'. 
+#' @param dbconn Open database connection.
+#' @param dbconnopen Logical. If TRUE, keep database connection open.
 #' @param gui Logical. If gui, user is prompted for parameters.
 #'
 #' @return tdomdata - a list of the following objects:
@@ -256,6 +258,8 @@ datSumTreeDom <- function(tree = NULL,
                           returnDT = TRUE,
                           savedata = FALSE,
                           savedata_opts = NULL,
+                          dbconn = NULL,
+                          dbconnopen = FALSE,
                           gui = FALSE){
   ####################################################################################
   ## DESCRIPTION: Aggregates tree domain data (ex. species) to condition or plot level  
@@ -483,7 +487,7 @@ datSumTreeDom <- function(tree = NULL,
       tsumuniqueid <- c(tsumuniqueid, condid)
     }
   }
-
+  
   if (seedonly) {
     tuniqueid <- pcheck.varchar(var2check=tuniqueid, varnm="tuniqueid", 	
 		checklst=seednames, caption="UniqueID variable - seed", 
@@ -657,7 +661,6 @@ datSumTreeDom <- function(tree = NULL,
     }
   }
 
-
   #####################################################################
   ## Get tree data
   #####################################################################
@@ -680,7 +683,6 @@ datSumTreeDom <- function(tree = NULL,
     seedx <- setDT(sqldf::sqldf(seed.qry, dbname=dbname))
     setkeyv(seedx, tsumuniqueid)
   }
-
 
   ## Check cond and plot tables
   ########################################################################
@@ -1108,7 +1110,7 @@ datSumTreeDom <- function(tree = NULL,
   flag <- ifelse(NAto0, "0", "")
   if (FIAname) {
     if (tdomvar == "SPCD") {
-      tdomdata <- datLUTspp(treex, name=spcd_name)
+      tdomdata <- datLUTspp(x=treex, spcdname=spcd_name)
       ref_spcd <- tdomdata$ref_spcd
     } else {    
       tdomdata <- datLUTnm(treex, xvar=tdomvar, LUTvar="VALUE", FIAname=TRUE)
@@ -1197,7 +1199,7 @@ datSumTreeDom <- function(tree = NULL,
 
       if (FIAname) {
         if (tdomvar2 == "SPCD") {
-          tdomdata <- datLUTspp(treex, name=spcd_name)
+          tdomdata <- datLUTspp(x=treex, spcdname=spcd_name)
           ref_spcd <- tdomdata$ref_spcd
         } else {
           tdomdata <- datLUTnm(treex, xvar=tdomvar2, LUTvar="VALUE", FIAname=TRUE)
@@ -1288,7 +1290,8 @@ datSumTreeDom <- function(tree = NULL,
     outlst <- pcheck.output(outfolder=outfolder, out_dsn=out_dsn, 
         out_fmt=out_fmt, outfn.pre=outfn.pre, outfn.date=outfn.date, 
         overwrite_dsn=overwrite_dsn, overwrite_layer=overwrite_layer,
-        add_layer=add_layer, append_layer=append_layer, gui=gui)
+        add_layer=add_layer, append_layer=append_layer, out_conn=dbconn, 
+         dbconnopen=TRUE, gui=gui)
     outfolder <- outlst$outfolder
     out_dsn <- outlst$out_dsn
     out_fmt <- outlst$out_fmt
@@ -1299,14 +1302,14 @@ datSumTreeDom <- function(tree = NULL,
     if (is.null(out_layer)) {
       out_layer <- "tdomsum"
     }
+    out_conn = outlst$out_conn
   }
-  
+
   ################################################################################  
   ################################################################################  
   ### DO WORK
   ################################################################################ 
   ################################################################################  
-
   if (getadjplot) {
 
     if (bysubp) {
@@ -1322,9 +1325,12 @@ datSumTreeDom <- function(tree = NULL,
       treex <- tabs$tab1
       subpcx <- tabs$tab2
 
-      adjfacdata <- getadjfactorPLOT(treex=treex, seedx=seedx, condx=subpcx, 
-		tuniqueid=c(tuniqueid, subpid), cuniqueid=c(subpuniqueid, subpid),
-		areawt="CONDPROP_UNADJ")
+      adjfacdata <- getadjfactorPLOT(treex = treex, 
+	                     seedx = seedx, 
+					     condx = subpcx,
+						 tuniqueid = c(tuniqueid, subpid), 
+						 cuniqueid = c(subpuniqueid, subpid),
+						 areawt = "CONDPROP_UNADJ")
       condx <- adjfacdata$condx
       cuniqueid <- c(subpuniqueid, subpid)
  
@@ -1358,10 +1364,15 @@ datSumTreeDom <- function(tree = NULL,
       condx <- datFilter(x=condx, xfilter=cond.nonsamp.filter, 
 		title.filter="cond.nonsamp.filter")$xf
 
-      adjfacdata <- getadjfactorVOL(treex=treex, seedx=seedx, condx=condx, 
-		tuniqueid=tuniqueid, cuniqueid=cuniqueid, adj=TRUE)
+      adjfacdata <- getadjfactorVOL(treex = treex, 
+	                         seedx = seedx, 
+							 condx = condx,
+							 tuniqueid = tuniqueid, 
+							 cuniqueid = cuniqueid, 
+							 adj = TRUE)
       condx <- adjfacdata$condx
-      varadjlst <- c("ADJ_FACTOR_COND", "ADJ_FACTOR_SUBP", "ADJ_FACTOR_MICR", "ADJ_FACTOR_MACR")
+      varadjlst <- c("ADJ_FACTOR_COND", "ADJ_FACTOR_SUBP", 
+					 "ADJ_FACTOR_MICR", "ADJ_FACTOR_MACR")
       if (any(varadjlst %in% names(condx))) {
         varadjlst <- varadjlst[varadjlst %in% names(condx)]
         condx[, (varadjlst) := NULL]
@@ -1427,7 +1438,7 @@ datSumTreeDom <- function(tree = NULL,
       tdomtotnm <- paste0(tdomprefix, "TOT")
     }
   }
-
+ 
   ## GET NAME FOR SUMMED TREE VARIABLE FOR ALL TREE DOMAINS (IF PROPORTION = TRUE)
   if (proportion) denomvar <- paste0(newname, "_ALL")
 
@@ -1547,7 +1558,7 @@ datSumTreeDom <- function(tree = NULL,
     tdomvarlut <- merge(ref_spgrpcd, tdomvarlut, by.x="VALUE", by.y="SPGRPCD")
     names(tdomvarlut)[names(tdomvarlut) %in% c("VALUE", "MEANING")] <- c("SPGRPCD", "SPGRPNM")
   }        
- 
+
   ## Generate barplot
   if (tdombarplot) {
     ## Frequency
@@ -1668,7 +1679,7 @@ datSumTreeDom <- function(tree = NULL,
                                 append_layer=append_layer, 
                                 add_layer=TRUE))
     } else {
-      datExportData(sumtreef, 
+      datExportData(sumtreef, dbconn = out_conn, dbconnopen = TRUE,
           savedata_opts=list(outfolder=outfolder, 
                                 out_fmt=out_fmt, 
                                 out_dsn=out_dsn, 
@@ -1682,7 +1693,7 @@ datSumTreeDom <- function(tree = NULL,
     
     if (proportion) {
       if (pltsp) {
-        spExportSpatial(sumtreef.prop, 
+        spExportSpatial(sumtreef.prop,
             savedata_opts=list(outfolder=outfolder, 
                                 out_fmt=outsp_fmt, 
                                 out_dsn=out_dsn, 
@@ -1693,7 +1704,7 @@ datSumTreeDom <- function(tree = NULL,
                                 append_layer=append_layer, 
                                 add_layer=TRUE))
       } else {
-        datExportData(sumtreef.prop, 
+        datExportData(sumtreef.prop, dbconn = out_conn, dbconnopen = TRUE,
             savedata_opts=list(outfolder=outfolder, 
                                 out_fmt=out_fmt, 
                                 out_dsn=out_dsn, 
@@ -1718,7 +1729,7 @@ datSumTreeDom <- function(tree = NULL,
                                 append_layer=append_layer, 
                                 add_layer=TRUE))
       } else {
-        datExportData(sumtreef.pres, 
+        datExportData(sumtreef.pres, dbconn = out_conn, dbconnopen = TRUE,
             savedata_opts=list(outfolder=outfolder, 
                                 out_fmt=out_fmt, 
                                 out_dsn=out_dsn, 
@@ -1732,7 +1743,7 @@ datSumTreeDom <- function(tree = NULL,
     }
     if (cover) {
       if (pltsp) {
-        spExportSpatial(sumtreef.cov, 
+        spExportSpatial(sumtreef.cov,
             savedata_opts=list(outfolder=outfolder, 
                                 out_fmt=outsp_fmt, 
                                 out_dsn=out_dsn, 
@@ -1743,7 +1754,7 @@ datSumTreeDom <- function(tree = NULL,
                                 append_layer=append_layer, 
                                 add_layer=TRUE))
       } else {
-        datExportData(sumtreef.cov, 
+        datExportData(sumtreef.cov, dbconn = out_conn, dbconnopen = TRUE,
             savedata_opts=list(outfolder=outfolder, 
                                 out_fmt=out_fmt, 
                                 out_dsn=out_dsn, 
@@ -1757,7 +1768,7 @@ datSumTreeDom <- function(tree = NULL,
     }
     
     
-    datExportData(tdomvarlut, 
+    datExportData(tdomvarlut, dbconn = out_conn, dbconnopen = FALSE,
         savedata_opts=list(outfolder=outfolder, 
                             out_fmt=out_fmt, 
                             out_dsn=out_dsn, 

@@ -18,7 +18,10 @@ datLUTclass(
   vars2keep = NULL,
   keepcutbreaks = FALSE,
   dsn = NULL,
-  conn = NULL,
+  dbconn = NULL,
+  dbconnopen = FALSE,
+  dbwrite = FALSE,
+  dbreturn = TRUE,
   overwrite = TRUE,
   savedata = FALSE,
   savedata_opts = NULL,
@@ -65,7 +68,13 @@ classes are appended to dataset.}
 
 \item{dsn}{String. Data source name of database with x.}
 
-\item{conn}{Open database connection.}
+\item{dbconn}{Open database connection.}
+
+\item{dbconnopen}{Logical. If TRUE, keep database connection open.}
+
+\item{dbwrite}{Logical. If TRUE, write class column to database table x.}
+
+\item{dbreturn}{Logical. If TRUE, return table with class column.}
 
 \item{overwrite}{Logical. If TRUE, and the class name already exists 
 in x, overwrites class name.}
@@ -82,7 +91,7 @@ default = 'datlutcl'.}
 \item{xLUT}{ Input data table with look-up table variable(s). }
 \item{LUTclassnm}{ Name of the classified variable. } \item{LUT}{ Look-up
 table with categories. }
-
+tablst
 If savedata = TRUE, a comma-delimited file is output to the outfolder as
 outfn.  If outfn = NULL, the name of the file will be datlut_'date'.csv.
 }

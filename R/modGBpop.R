@@ -90,6 +90,7 @@
 #' 'plot').  'samp' - adjustments are calculated at strata/estimation unit
 #' level; 'plot' - adjustments are calculated at plot-level. Adjustments are
 #' only calculated for annual inventory plots (DESIGNCD=1).
+#' @param defaultVars Logical. If TRUE, a set of default variables are selected.
 #' @param unitvar String. Name of the estimation unit variable in unitarea and
 #' cond or pltassgn data frame with estimation unit assignment for each plot
 #' (e.g., 'ESTN_UNIT'). Optional if only one estimation unit.
@@ -250,6 +251,7 @@ modGBpop <- function(popType = "VOL",
                      areawt = "CONDPROP_UNADJ", 
                      areawt2 = NULL,
                      adj = "samp", 
+                     defaultVars = TRUE, 
                      unitvar = NULL, 
                      unitarea = NULL, 
                      areavar = "ACRES", 
@@ -507,8 +509,8 @@ modGBpop <- function(popType = "VOL",
     popevalid <- as.character(evalid)
     substr(popevalid, nchar(popevalid)-1, nchar(popevalid)) <- 
 		formatC(FIESTAutils::ref_popType[FIESTAutils::ref_popType$popType %in% popType, "EVAL_TYP_CD"], width=2, flag="0")
-    evalid <- as.character(evalid)
-    substr(evalid, nchar(evalid)-1, nchar(evalid)) <- "01"
+    #evalid <- as.character(evalid)
+    #substr(evalid, nchar(evalid)-1, nchar(evalid)) <- "01"
   } 
   if (popType %in% c("GROW", "MORT", "REMV")) {
     popType <- "GRM"
@@ -860,7 +862,7 @@ modGBpop <- function(popType = "VOL",
   if (!is.null(unitvar2)) {
     condx[, (unitvars) := tstrsplit(get(unitvar), "-", fixed=TRUE)]
   }
-
+ 
   if (adj == "none") {
     setkeyv(condx, c(cuniqueid, condid))
     areawtnm <- areawt
@@ -1066,10 +1068,10 @@ modGBpop <- function(popType = "VOL",
   ## Save data frames
   ##################################################################
   if (savedata) {
-    if (out_fmt == "sqlite") {
-      returnlst$pop_fmt <- "sqlite"
-      returnlst$pop_dsn <- file.path(outfolder, out_dsn)
-    }
+#    if (out_fmt == "sqlite") {
+#      returnlst$pop_fmt <- "sqlite"
+#      returnlst$pop_dsn <- file.path(outfolder, out_dsn)
+#    }
     message("saving condx...")
     datExportData(condx, 
           savedata_opts=list(outfolder = outfolder, 
@@ -1095,7 +1097,7 @@ modGBpop <- function(popType = "VOL",
 		                 add_layer = TRUE))
     rm(condx)
     rm(pltcondx)
-    gc()
+    # gc()
 
     if (popType %in% c("CHNG") && !is.null(sccmx)) {
       message("saving sccmx...")
@@ -1110,7 +1112,7 @@ modGBpop <- function(popType = "VOL",
 		                 append_layer = append_layer,
 		                 add_layer = TRUE))
       rm(sccmx)
-      gc()
+      # gc()
     }
 
     if (!is.null(treef)) {
@@ -1126,7 +1128,7 @@ modGBpop <- function(popType = "VOL",
 		                 append_layer = append_layer,
 		                 add_layer = TRUE))
       rm(treef)
-      gc()
+      # gc()
     }
     if (!is.null(seedf)) {
       message("saving seedx...")
@@ -1141,7 +1143,7 @@ modGBpop <- function(popType = "VOL",
 		                 append_layer = append_layer,
 		                 add_layer = TRUE))
       rm(seedf)
-      gc()
+      # gc()
     }
     if (!is.null(vcondsppf)) {
       message("saving vcondsppx...")
@@ -1156,7 +1158,7 @@ modGBpop <- function(popType = "VOL",
 		                 append_layer = append_layer,
 		                 add_layer = TRUE))
       rm(vcondsppf)
-      gc()
+      # gc()
     }
     if (!is.null(vcondstrf)) {
       message("saving vcondstrx...")
@@ -1171,7 +1173,7 @@ modGBpop <- function(popType = "VOL",
 		                 append_layer = append_layer,
 		                 add_layer = TRUE))
       rm(vcondstrf)
-      gc()
+      # gc()
     }
     if (popType == "GRM" && !is.null(grmf) && !poponly) {
       message("saving grmx...")
@@ -1187,7 +1189,7 @@ modGBpop <- function(popType = "VOL",
 		                   append_layer = append_layer,
 		                   add_layer = TRUE))
         rm(grmf)
-        gc()
+        # gc()
       }
       if (!is.null(popcheck$beginf)) {
         message("saving beginx...")
@@ -1202,7 +1204,7 @@ modGBpop <- function(popType = "VOL",
 		                  append_layer = append_layer,
 		                  add_layer = TRUE))
         rm(beginf)
-        gc()
+        # gc()
       }
       if (!is.null(popcheck$midptf)) {
         message("saving midptx...")
@@ -1217,7 +1219,7 @@ modGBpop <- function(popType = "VOL",
 		                   append_layer = append_layer,
 		                   add_layer = TRUE))
         rm(midptf)
-        gc()
+        # gc()
       }
     }
 
@@ -1257,7 +1259,7 @@ modGBpop <- function(popType = "VOL",
     rm(pltassgnx)
     rm(unitarea)
     rm(stratalut)
-    gc()
+    # gc()
   }
 
 
@@ -1276,9 +1278,11 @@ modGBpop <- function(popType = "VOL",
   } 
 
   rm(popcheck)
-  gc()
+  # gc()
 
   if (returndata) {
     return(returnlst)
-  } 
+  } else {
+    return(invisible())
+  }
 }

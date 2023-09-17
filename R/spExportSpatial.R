@@ -139,6 +139,7 @@ spExportSpatial <- function(sfobj, savedata_opts=NULL) {
       if (DBI::dbCanConnect(RSQLite::SQLite(), out_dsn)) {
         sqlconn <- DBI::dbConnect(RSQLite::SQLite(), out_dsn, loadable.extensions = TRUE)
         tablst <- DBI::dbListTables(sqlconn)
+        DBI::dbDisconnect(sqlconn)
         if (length(tablst) == 0 || !"SpatialIndex" %in% tablst) {
           stop(paste(out_dsn, "is a Spatialite database... "))
         }
@@ -220,7 +221,7 @@ spExportSpatial <- function(sfobj, savedata_opts=NULL) {
                   message(e)
 			return(NULL) })
     if (is.null(writechk)) {
-      exit()
+      stop()
     }
 
     ## Write new names to *.csv file
@@ -232,5 +233,7 @@ spExportSpatial <- function(sfobj, savedata_opts=NULL) {
 
   } else {
     stop(out_fmt, " currently not supported")
-  }  
+  } 
+
+  invisible() 
 }

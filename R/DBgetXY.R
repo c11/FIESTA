@@ -306,8 +306,9 @@ DBgetXY <- function (states = NULL,
       data_dsn <- xy_dsn
     }
   }
+
   if (datsource == "sqlite" && !is.null(data_dsn)) {
-    if (data_dsn == xy_dsn) {
+    if (!is.null(xy_dsn) && data_dsn == xy_dsn) {
       dbconn <- suppressMessages(DBtestSQLite(data_dsn, 
 				dbconnopen=TRUE, showlist=FALSE))
     } else {
@@ -463,7 +464,10 @@ DBgetXY <- function (states = NULL,
       iseval <- FALSE
     }
   }
-  if (is.null(evalInfo)) stop("no data to return")
+  if (is.null(evalInfo)) {
+    message("no data to return")
+    return(NULL)
+  }
   states <- evalInfo$states
   rslst <- evalInfo$rslst
   evalidlist <- evalInfo$evalidlist
@@ -601,7 +605,7 @@ DBgetXY <- function (states = NULL,
     names(XYdf) <- toupper(names(XYdf))
     xyflds <- names(XYdf)
   }
-
+ 
   ## Check xy.uniqueid
   xy.uniqueid <- pcheck.varchar(var2check=xy.uniqueid, varnm="xy.uniqueid", 
 		gui=gui, checklst=xyflds, caption="UniqueID variable of xy",
@@ -621,7 +625,6 @@ DBgetXY <- function (states = NULL,
   } else {
     pvars2keep <- NULL
   }
-
  
   ####################################################################
   ## Check plot table
@@ -685,6 +688,17 @@ DBgetXY <- function (states = NULL,
       if (!is.null(plotnm)) {
         pltflds <- DBI::dbListFields(dbconn, plotnm)
       }
+	  
+	  ## Check for indices
+      if (evalCur || measCur) {  	  
+        chk <- checkidx(dbconn, plotnm, c("STATECD", "UNITCD", "COUNTYCD", "PLOT"))
+        if (is.null(chk)) {
+          message("to speed query... add an index to the plot table")
+          message("createidx(dbconn, '", plotnm, 
+                   "', c('STATECD', 'UNITCD', 'COUNTYCD', 'PLOT'))")
+        }
+      }
+ 
     } else {
       PLOT <- pcheck.table(plot_layer, stopifnull=TRUE, stopifinvalid=TRUE)
       plotnm <- "PLOT"
@@ -793,6 +807,7 @@ DBgetXY <- function (states = NULL,
       }
     }
   } else {
+   
     plotnm <- NULL
     if (measCur) {
       xyvarsA <- paste0("p.", unique(xyvars)) 
@@ -940,14 +955,16 @@ DBgetXY <- function (states = NULL,
         popSURVEY <- TRUE
       }
         
-      pfromqry <- getpfromqry(Endyr = measEndyr, 
+      pfromqry <- getpfromqry(Endyr = measEndyr,
+                            varCur = varCur, 
                             SCHEMA. = SCHEMA., 
                             intensity1 = intensity1, 
                             popSURVEY = popSURVEY, 
                             plotnm = pnm,
                             pjoinid = pid,
                             surveynm = surveynm,
-                            plotobj = get(pnm))
+                            plotobj = get(pnm),
+                            Type = Type)
       if (xyisplot || is.null(plotnm)) {
         xyfromqry <- pfromqry
       } else {
@@ -1036,7 +1053,7 @@ DBgetXY <- function (states = NULL,
   xycoords.qry <- paste0("select distinct ", toString(xyvarsA), 
 		" from ", xyfromqry,
 		" where ", evalFilter)
-  #message(xycoords.qry)
+  message(xycoords.qry)
 
   if (xy_datsource == "sqlite") {
     if (is.null(dbconn)) dbconn <- xyconn
