@@ -55,6 +55,9 @@
 #' @param SAdoms sf object. SA domains with attributes for joining.
 #' @param smallbnd sf object. small bound.
 #' @param smallbnd.domain String. Name of attribute defining domain attribute.
+#' @param largebnd.unique String. Name of the large boundary unique identifer
+#' to define plots within a model extent. If NULL, all plots are used for model
+#' extent.
 #' @param pltassgn DF/DT, comma-separated values (CSV) file(*.csv), or layer in
 #' dsn, Can also be a shapefile(*.shp) with one record per plot, a spatial
 #' layer in dsn, or a sf R object. Plot-level assignment of estimation unit
@@ -80,6 +83,7 @@
 #' model. 
 #' @param predfac String vector. Name(s) of factor predictor variables to use
 #' in model. Names will change in output depending on number of categories.
+#' @param addxy Logical. If TRUE, adds X/Y attributes to pltassgn.
 #' @param returndata Logical. If TRUE, returns data objects.
 #' @param savedata Logical. If TRUE, saves table(s) to outfolder. 
 #' @param saveobj Logical. If TRUE, saves returned list object to outfolder.
@@ -177,7 +181,7 @@
 #'          predfac = "tnt")
 #' }
 #' @export modSApop
-modSApop <- function(popType="VOL",
+modSApop <- function(popType = "VOL",
                      popTabs = popTables(),
                      popTabIDs = popTableIDs(), 
                      popFilter = popFilters(),
@@ -193,6 +197,7 @@ modSApop <- function(popType="VOL",
                      dunitzonal = NULL, 
                      prednames = NULL, 
                      predfac = NULL, 
+                     addxy = FALSE,
                      returndata = TRUE,
                      savedata = FALSE, 
                      saveobj = FALSE, 
@@ -202,6 +207,7 @@ modSApop <- function(popType="VOL",
                      SAdoms = NULL, 
                      smallbnd = NULL, 
                      smallbnd.domain = NULL, 
+                     largebnd.unique = NULL,
                      SAdata = NULL, 
                      pltdat = NULL, 
                      auxdat = NULL, 
@@ -231,10 +237,10 @@ modSApop <- function(popType="VOL",
   returnSApopdat <- FALSE
   nonsamp.pfilter=nonsamp.cfilter <- NULL 
   returnlst <- list(module = "SA")
-  pvars2keep=cvars2keep=NULL
   adj <- ifelse(adjplot, "plot", "none")
+  areawt2 <- NULL
+  pvars2keep <- NULL
 
-  
   # dunitvar2=NULL
   # pvars2keep=NULL
   # cvars2keep=NULL
@@ -244,10 +250,7 @@ modSApop <- function(popType="VOL",
  
   ## Set global variables
   ONEUNIT=n.total=n.strata=strwt=TOTAL=stratcombinelut <- NULL
-  dunitvar2=NULL
-  adj <- "plot"
-  
-  
+ 
   ##################################################################
   ## CHECK PARAMETER NAMES
   ##################################################################
@@ -289,10 +292,11 @@ modSApop <- function(popType="VOL",
   }
   
   ## Set user-supplied popFilters values
+  popFilter2 <- popFilters_defaults_list
   if (length(popFilter) > 0) {
     for (i in 1:length(popFilter)) {
       if (names(popFilter)[[i]] %in% names(popFilters_defaults_list)) {
-        assign(names(popFilter)[[i]], popFilter[[i]])
+		    popFilter2[[names(popFilter)[[i]]]] <- popFilter[[i]]
       } else {
         stop(paste("Invalid parameter: ", names(popFilter)[[i]]))
       }
@@ -325,7 +329,11 @@ modSApop <- function(popType="VOL",
   ## CHECK PARAMETER INPUTS
   ##################################################################
   
-  ## Check savedata 
+  ## Check addxy 
+  addxy <- pcheck.logical(addxy, varnm="addxy", 
+    title="Add XY?", first="NO", gui=gui, stopifnull=TRUE)
+
+    ## Check savedata 
   savedata <- pcheck.logical(savedata, varnm="savedata", 
 		title="Save data tables?", first="YES", gui=gui, stopifnull=TRUE)
 
@@ -371,13 +379,21 @@ modSApop <- function(popType="VOL",
   DWM_types <- c("CWD", "FWD_SM", "FWD_LG", "DUFF")
   evalTyplst <- c("ALL", "CURR", "VOL", "LULC", "P2VEG", "INV", "DWM", "CHNG", "GRM")
   popType <- pcheck.varchar(var2check=popType, varnm="popType", gui=gui,
-		checklst=evalTyplst, caption="popType", multiple=FALSE, stopifnull=TRUE)
-  popevalid <- as.character(evalid)
-  if (!is.null(evalid)) {
+		checklst=evalTyplst, caption="popType", multiple=FALSE, stopifinvalid=FALSE)
+  if (is.null(popType)) {
+    message("popType is invalid... must be from following list:\n", toString(evalTyplst))
+  }
+  popevalid <- as.character(popFilter2$evalid)
+  if (!is.null(popevalid)) {
     substr(popevalid, nchar(popevalid)-1, nchar(popevalid)) <- 
-		formatC(FIESTAutils::ref_popType[FIESTAutils::ref_popType$popType %in% popType, "EVAL_TYP_CD"], width=2, flag="0")
+		formatC(FIESTAutils::ref_popType[FIESTAutils::ref_popType$popType %in% popType, "EVAL_TYP_CD"], 
+		width=2, flag="0")
+    #evalid <- as.character(evalid)
+    #substr(evalid, nchar(evalid)-1, nchar(evalid)) <- "01"
   } 
-
+  if (popType %in% c("GROW", "MORT", "REMV")) {
+    popType <- "GRM"
+  }
 
   ###################################################################################
   ## Load data
@@ -400,14 +416,16 @@ modSApop <- function(popType="VOL",
     puniqueid <- SAdata$puniqueid
     pjoinid <- SAdata$pjoinid
     predfac <- SAdata$predfac
-    zonalnames <- SAdata$zonalnames
+    spxy <- SAdata$spxy
+    xy.uniqueid <- SAdata$xy.uniqueid
+    pvars2keep <- SAdata$vars2keep
 
     if (is.null(prednames)) {
       prednames <- SAdata$prednames
     } else {
       if (!all(prednames %in% SAdata$prednames))
         stop("invalid prednames: ", 
-		toString(prednames[!prednames %in% SAdata$prednames]))
+		            toString(prednames[!prednames %in% SAdata$prednames]))
       predfac <- predfac[predfac %in% prednames]
     }
   } else {
@@ -415,6 +433,8 @@ modSApop <- function(popType="VOL",
       popTabs <- pltdat$tabs
       popTabIDs <- pltdat$tabIDs
       pjoinid <- pltdat$pjoinid
+      spxy <- pltdat$spxy
+      xy.uniqueid <- pltdat$xy.uniqueid
     }
     if (!is.null(auxdat)) {
       list.items <- c("pltassgn", "unitzonal", "unitvar", "prednames", "unitarea")
@@ -437,6 +457,10 @@ modSApop <- function(popType="VOL",
         predfac <- predfac[predfac %in% prednames]
       }
     } 
+  }
+  ## check addxy
+  if (addxy && is.null(spxy)) {
+    message("no xy available...  use returnxy=TRUE when getting plot data")
   }
   
   ## Set user-supplied popTable values 
@@ -517,7 +541,9 @@ modSApop <- function(popType="VOL",
   if (!is.null(SAdoms) && !"sf" %in% class(SAdoms)) {
     stop("invalid SAdoms")
   }
-
+  
+  
+  pvars2keep <- unique(c(largebnd.unique, "AOI", pvars2keep))
   ###################################################################################
   ## CHECK PLOT PARAMETERS AND DATA
   ## Generate table of sampled/nonsampled plots and conditions
@@ -526,12 +552,11 @@ modSApop <- function(popType="VOL",
   ###################################################################################
   pltcheck <- check.popdataPLT(dsn=dsn, tabs=popTabs, tabIDs=popTabIDs, 
       pltassgn=pltassgn, pltassgnid=pltassgnid, pjoinid=pjoinid, 
-      module="SA", popType=popType, popevalid=popevalid, adj=adj, ACI=ACI, 
-      evalid=evalid, measCur=measCur, measEndyr=measEndyr, 
-      measEndyr.filter=measEndyr.filter, invyrs=invyrs, intensity=intensity,
-      nonsamp.pfilter=nonsamp.pfilter, unitarea=dunitarea, areavar=areavar, 
-      unitvar=dunitvar, unitvar2=dunitvar2, areaunits=areaunits, 
-      unit.action=unit.action, prednames=prednames, predfac=predfac, pvars2keep="AOI")
+      module="SA", popType=popType, popevalid=popevalid, adj=adj, 
+	    popFilter=popFilter2, nonsamp.pfilter=nonsamp.pfilter, 
+	    unitarea=dunitarea, areavar=areavar, unitvar=dunitvar, 
+	    unitvar2=unitvar2, areaunits=areaunits, unit.action=unit.action, 
+      prednames=prednames, predfac=predfac, pvars2keep=pvars2keep)
   if (is.null(pltcheck)) return(NULL)
   pltassgnx <- pltcheck$pltassgnx
   pltassgnid <- pltcheck$pltassgnid
@@ -554,6 +579,22 @@ modSApop <- function(popType="VOL",
   states <- pltcheck$states
   invyrs <- pltcheck$invyrs
   dbconn <- pltcheck$dbconn
+  
+  # subset pvars2keep 
+  if (!"AOI" %in% names(pltassgnx)) {
+    pltassgnx$AOI <- 1
+  }
+
+  if (!is.null(pvars2keep)) {
+    pvars2keep <- pvars2keep[pvars2keep %in% names(pltx) & !pvars2keep %in% names(pltassgnx)]
+    if (length(pvars2keep) > 0) {
+      pltassgnx <- merge(pltassgnx, pltx[, c(puniqueid, pvars2keep), with=FALSE], 
+                       by.x=pltassgnid, by.y=puniqueid)
+      pltx <- pltx[, names(pltx)[!names(pltx) %in% pvars2keep], with=FALSE]
+      setcolorder(pltassgnx, c(pltassgnid, pvars2keep, 
+                          names(pltassgnx)[!names(pltassgnx) %in% c(pltassgnid, pvars2keep)]))
+    }
+  }
 
   if (ACI) {
     nfplotsampcnt <- pltcheck$nfplotsampcnt
@@ -564,10 +605,12 @@ modSApop <- function(popType="VOL",
     ## Check parameters and data for popType AREA/VOL
     ###################################################################################
     popcheck <- check.popdataVOL(gui=gui, 
-               tabs=popTabs, tabIDs=popTabIDs, pltassgnx=pltassgnx, 
-               pfromqry=pfromqry, palias=palias, pjoinid=pjoinid, whereqry=whereqry, 
-               adj=adj, ACI=ACI, pltx=pltx, puniqueid=puniqueid, dsn=dsn, dbconn=dbconn,
-               condid="CONDID", nonsamp.cfilter=nonsamp.cfilter, cvars2keep="AOI")
+        tabs=popTabs, tabIDs=popTabIDs, pltassgnx=pltassgnx, 
+        pfromqry=pfromqry, palias=palias, pjoinid=pjoinid, 
+			  whereqry=whereqry, adj=adj, ACI=ACI, 
+			  pltx=pltx, puniqueid=puniqueid, dsn=dsn, dbconn=dbconn,
+        condid="CONDID", nonsamp.cfilter=nonsamp.cfilter, 
+			  areawt=areawt, areawt2=areawt2, cvars2keep="AOI")
     if (is.null(popcheck)) return(NULL)
     condx <- popcheck$condx
     pltcondx <- popcheck$pltcondx
@@ -585,7 +628,7 @@ modSApop <- function(popType="VOL",
   if (is.null(treef) && is.null(seedf)) {
     stop("must include tree data")
   }
- 
+
   ###################################################################################
   ## Check auxiliary data
   ###################################################################################
@@ -609,7 +652,12 @@ modSApop <- function(popType="VOL",
   prednames <- auxdat$prednames
   predfac <- auxdat$predfac
   if (is.null(key(pltassgnx))) setkeyv(pltassgnx, pltassgnid)
-
+  
+  # subset pvars2keep 
+  if (!"AOI" %in% names(dunitlut)) {
+    dunitlut$AOI <- 1
+  }
+  
   ## Change names based on data.frame names
   dunitlutcols <- which(names(dunitlut) %in% prednames)
   pltassgnxcols <- which(names(pltassgnx) %in% prednames)
@@ -640,6 +688,10 @@ modSApop <- function(popType="VOL",
   condx <- condx[pltassgnx[, c(pltassgnid, dunitvar, prednames), with=FALSE]]
   setkeyv(condx, c(cuniqueid, condid))
 
+  if ("MACRPROP_UNADJ" %in% names(condx) && is.character(condx$MACRPROP_UNADJ)) {
+    condx$MACRPROP_UNADJ <- as.numeric(condx$MACRPROP_UNADJ)
+  }
+  
   if (adj == "none") {
     setkeyv(condx, c(cuniqueid, condid))
   } else {
@@ -663,26 +715,113 @@ modSApop <- function(popType="VOL",
     }
   }
  
+
+  ###################################################################################
+  ## Return population data objects
+  ###################################################################################
+  estvar.area <- ifelse(adj == "none", "CONDPROP_UNADJ", "CONDPROP_ADJ")
+
   if (!is.null(SAdoms)) {
     returnlst$SAdomsdf <- sf::st_drop_geometry(SAdoms)
   }
-  if (!is.null(smallbnd)) {
+  if (!is.null(SAdoms) && is.null(smallbnd)) {
+    if (!"AOI" %in% names(SAdoms)) {
+      stop("missing AOI attribute in SAdoms")
+    }
+    smallbnd <- SAdoms[SAdoms$AOI == 1, ]
+  } else {
     smallbnd <- pcheck.spatial(layer=smallbnd, caption="smallbnd")
-    if (is.null(smallbnd.domain)) {
-      if ("DOMAIN" %in% names(smallbnd)) {
-        smallbnd.domain <- "DOMAIN"
-      } else if (length(names(sf::st_drop_geometry(smallbnd))) == 1) {
-        smallbnd.domain <- names(sf::st_drop_geometry(smallbnd))
-      } else {
-        stop("must include smallbnd.domain for smallbnd")
+    if (!"AOI" %in% names(smallbnd)) {
+      smallbnd$AOI <- 1
+    }
+  }  
+  if (is.null(smallbnd.domain)) {
+    if ("DOMAIN" %in% names(smallbnd)) {
+      smallbnd.domain <- "DOMAIN"
+    } else if (length(names(sf::st_drop_geometry(smallbnd))) == 1) {
+      smallbnd.domain <- names(sf::st_drop_geometry(smallbnd))
+    } else {
+      stop("must include smallbnd.domain for smallbnd")
+    }
+  } 
+  returnlst$smallbnd <- smallbnd
+  returnlst$smallbnd.domain <- smallbnd.domain
+
+
+  ## Add xy attributes to pltassgnx
+  ###############################################################################
+  if (addxy) {
+    if (is.null(smallbnd)) {
+      message("need smallbnd for addxy")
+      stop()
+    }
+    spxycompare <- crsCompare(spxy, smallbnd, nolonglat=TRUE)
+    spxy <- spxycompare$x
+    smallbnd <- spxycompare$y
+    
+    if (is.null(xy.uniqueid)) {
+      if (pltassgnid %in% names(spxy)) {
+        xy.uniqueid <- pltassgnid
       }
-    } 
-    returnlst$smallbnd <- smallbnd
-    returnlst$smallbnd.domain <- smallbnd.domain
+    }
+    if (!is.null(xy.uniqueid) && xy.uniqueid %in% names(spxy)) {
+      xy.coords <- data.frame(sf::st_drop_geometry(spxy[, xy.uniqueid]), sf::st_coordinates(spxy))
+      pltassgnx <- merge(pltassgnx, xy.coords, by.x=pltassgnid, by.y=xy.uniqueid)
+    } else {
+      message(pltassgnid, " not in spxy names... cannot merge")
+      stop()
+    }
   }
- 
-  estvar.area <- ifelse(adj == "none", "CONDPROP_UNADJ", "CONDPROP_ADJ")
+
+  ###################################################################################
+  ## Add new variables to pltcondx for estimation
+  ###################################################################################
+  ## Get order of pltcondx columns
+  pltcondxcols <- names(pltcondx)
+  newcols <- {}
+  
+  if (!"LANDSTATUSCD" %in% names(pltcondx) && "LANDSTATUSCD" %in% names(pltcondx)) {
+    ## Add LANDSTATUSCD based on the following lookup table
+    LANDSTATUSlut <- data.frame(LANDSTATUS = c(101:108, 111:117),
+                    LANDSTATUSCD = c(rep(1, 6), rep(2, 2), rep(3, 6), 4),
+                    LANDSTATUSNM = c(rep("Timberland", 6), 
+                                     rep("Other forestland", 2), 
+                                     rep("Reserved productive forestland", 6),
+                                         "Reserved other forestland"))
+    pltcondx$LANDSTATUS <- with(pltcondx, COND_STATUS_CD * 100 + RESERVCD * 10 + SITECLCD)
+    pltcondx <- merge(pltcondx, LANDSTATUSlut, by="LANDSTATUS", all.x=TRUE)
+    pltcondx$LANDSTATUS <- NULL
+    newcols <- c("LANDSTATUSCD", "LANDSTATUSNM")
+  }
+
+  if (!"FORTYPGRPCD" %in% names(pltcondx) && "FORTYPCD" %in% names(pltcondx)) {
+    ## Add FORTYPGRPCD to pltcondx if not already in dataset
+    #pltcondx <- addFORTYPGRPCD(pltcondx)
+    ref_fortyp <- ref_codes[ref_codes$VARIABLE == "FORTYPCD", c("VALUE", "GROUPCD")]
+    names(ref_fortyp) <- c("FORTYPCD", "FORTYPGRPCD")
+    pltcondx <- merge(pltcondx, ref_fortyp, by="FORTYPCD", all.x=TRUE)
+    newcols <- c(newcols, "FORTYPGRPCD")
+  }
+
+  if (!"DSTRBGRP" %in% names(pltcondx) && "DSTRBCD1" %in% names(pltcondx)) {
+    ## Add FORTYPGRPCD to pltcondx if not already in dataset
+    #pltcondx <- addFORTYPGRPCD(pltcondx)
+    ref_dstrbcd <- ref_codes[ref_codes$VARIABLE == "DSTRBCD", c("VALUE", "GROUPCD")]
+    names(ref_dstrbcd) <- c("DSTRBCD1", "DSTRBGRP")
+    pltcondx <- merge(pltcondx, ref_dstrbcd, by="DSTRBCD1", all.x=TRUE)
+    newcols <- c(newcols, "DSTRBGRP")
+  }
+   
+  ## Move new columns to end of table
+  setcolorder(pltcondx, c(pltcondxcols, newcols))
+
+  ## Subset condx
+  condx <- condx[, c("DOMAIN", cuniqueid, condid, "CONDPROP_ADJ"), with=FALSE]
+  
+  ## Build list of data to return
+  ###################################################################################
   returnlst <- append(returnlst, list(condx=condx, pltcondx=pltcondx, 
+             pltassgnx = pltassgnx, pltassgnid = pltassgnid,
              cuniqueid=cuniqueid, condid=condid, ACI.filter=ACI.filter, 
              dunitarea=dunitarea, areavar=areavar, areaunits=areaunits, 
              dunitvar=dunitvar, dunitlut=data.table(dunitlut), 
@@ -699,6 +838,7 @@ modSApop <- function(popType="VOL",
   }
   returnlst$prednames <- prednames
   returnlst$predfac <- predfac
+  returnlst$largebnd.unique <- largebnd.unique
 
 
   ## Save list object

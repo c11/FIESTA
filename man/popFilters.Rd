@@ -6,12 +6,16 @@
 \usage{
 popFilters(
   evalid = NULL,
-  invyrs = NULL,
-  intensity = NULL,
+  states = NULL,
+  evalCur = FALSE,
+  evalEndyr = NULL,
   measCur = FALSE,
   measEndyr = NULL,
-  measEndyr.filter = NULL,
+  invyrs = NULL,
+  measyrs = NULL,
+  intensity = NULL,
   ACI = FALSE,
+  AOIonly = FALSE,
   ...
 )
 }
@@ -19,22 +23,36 @@ popFilters(
 \item{evalid}{Numeric. FIA Evaluation identifier for subsetting plots for
 population.}
 
+\item{states}{String or numeric vector. Name (e.g., 'Arizona','New Mexico')
+or code (e.g., 4, 35) of state(s) for evalid. If all states in one or more
+FIA Research Station is desired, set states=NULL and use RS argument to
+define RS.}
+
+\item{evalCur}{Logical. If TRUE, the most current FIA Evaluation is extracted
+for state(s).}
+
+\item{evalEndyr}{Number. The end year of the FIA Evaluation of interest.
+Selects only sampled plots and conditions for the evaluation period. If
+more than one state, create a named list object with evalEndyr labeled for
+each state (e.g., list(Utah=2014, Colorado=2013).}
+
+\item{measCur}{Logical. If TRUE, the most current sampled plots available
+for state(s).}
+
+\item{measEndyr}{Number. The most current sampled plots measured before or
+during end given..}
+
 \item{invyrs}{Integer vector. Inventory year(s) (e.g., c(2000, 2001, 2002)).}
+
+\item{measyrs}{Integer vector. Measurement year(s) (e.g., c(2000, 2001, 2002)).}
 
 \item{intensity}{Integer code. Code(s) indicating intensity to use for
 population.}
 
-\item{measCur}{Logical. Inventory span defining variable. If TRUE, extract
-plots with most current measurement for state(s).}
-
-\item{measEndyr}{Logical. Inventory span defining variable. If TRUE, extract
-plots with most current measurement for state(s) for years measured in or
-before measEndyr.}
-
-\item{measEndyr.filter}{Filter for extracting plots using measEndyr. Must be
-in R syntax (e.g., 'AOI == 1').}
-
 \item{ACI}{Logical. If TRUE, including All Condition Inventory (ACI) plots.}
+
+\item{AOIonly}{Logical. If TRUE, and there is an AOI (1/0) attribute in the
+population data, only AOI=1 are used for estimation.}
 
 \item{...}{For extendibility.}
 }

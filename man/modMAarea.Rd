@@ -14,6 +14,7 @@ modMAarea(
   pcfilter = NULL,
   rowvar = NULL,
   colvar = NULL,
+  sumunits = FALSE,
   bootstrap = FALSE,
   returntitle = FALSE,
   savedata = FALSE,
@@ -21,6 +22,7 @@ modMAarea(
   title_opts = NULL,
   savedata_opts = NULL,
   gui = FALSE,
+  modelselect_bydomain = FALSE,
   ...
 )
 }
@@ -36,7 +38,9 @@ estimator to match FIA estimates.}
 \item{prednames}{String vector. Name(s) of predictor variables to include in
 model.}
 
-\item{modelselect}{Boolean. TRUE if you want model selection to occur.}
+\item{modelselect}{Logical. If TRUE, an elastic net regression model is fit 
+to the entire plot level data, and the variables selected in that model are 
+used for the proceeding estimation.}
 
 \item{landarea}{String. The sample area filter for estimates ('ALL',
 'FOREST', 'TIMBERLAND').  If landarea=FOREST, filtered to COND_STATUS_CD =
@@ -50,6 +54,9 @@ only one domain, rowvar = domain variable. If more than one domain, include
 colvar. If no domain, rowvar = NULL.}
 
 \item{colvar}{String. Name of the column domain variable in cond or tree.}
+
+\item{sumunits}{Logical. If TRUE, estimation units are summed and returned
+in one table.}
 
 \item{bootstrap}{Logical. If TRUE, returns bootstrap variance estimates,
 otherwise uses Horvitz-Thompson estimator under simple random sampling
@@ -69,6 +76,10 @@ options.}
 of options. Only used when savedata = TRUE.}
 
 \item{gui}{Logical. If gui, user is prompted for parameters.}
+
+\item{modelselect_bydomain}{Logical. If TRUE, modelselection will occur at 
+the domain level as specified by rowvar and/or colvar and not at the level of
+the entire sample.}
 
 \item{...}{Parameters for modMApop() if MApopdat is NULL.}
 }

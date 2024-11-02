@@ -18,8 +18,8 @@
 #' object.
 #' @param polyv.att String. Name of attribute in polyv to identify zones for
 #' summarizing raster statistics.
-#' @param rastfn String or Raster. File name(s) with extensions, or raster
-#' object(s).  Note: raster objects must be written to file.
+#' @param rastfn String or Raster. File name with extension, or raster
+#' object.  Note: raster objects must be written to file.
 #' @param rastfolder String. Name of the folder with raster layers. Optional.
 #' Useful if all raster layers are in same folder.
 #' @param bands Numeric vector. If rast is a multi-layer raster and only 1 or
@@ -31,16 +31,19 @@
 #' @param pixelfun Function. A function to apply to the individual pixel values
 #' before calculating sum and mean. The function should accept a single numeric
 #' argument (pixel value) and return a single numeric argument.
+#' @param validate Logical. If TRUE, validates polyv and clippolyv before 
+#' clipping. Uses sf::st_make_valid with default parameters 
+#' (geos_method='valid_structure', geos_keep_collapsed=FALSE).
 #' @param outname String. Variable name for output. The output names will use
 #' outname as a prefix to summary statistics (i.e., 'outname'.mean,
 #' 'outname'.sum).
 #' @param showext Logical. If TRUE, layer extents are displayed in plot window.
 #' @param rastlut Data frame. A look up table to recode raster values. Must be
 #' 2 columns: Column 1 with raster values and column 2 with recode values.
-#' @param rast.NODATA Numeric. NODATA value or other values to ignore. These
-#' values will be removed from output zonal table. See notes below.
-#' @param na.rm Logical. If TRUE, Null values are removed before zonal
-#' statistic calculations.
+#' @param rast.NODATA Numeric. NODATA value (if not already defined) or other 
+#' values to ignore. These values will be removed from output zonal table. 
+#' NODATA values defined in raster are removed before zonal statistic 
+#' calculations.
 #' @param savedata Logical. If TRUE, the zonal data are saved to outfolder.
 #' @param savedata_opts List. See help(savedata_options()) for a list
 #' of options. Only used when savedata = TRUE. If out_layer = NULL,
@@ -102,11 +105,11 @@ spZonalRast <- function(polyv,
                         bands = NULL, 
                         zonalstat, 
                         pixelfun = NULL, 
+                        validate = FALSE,
                         outname = NULL, 
                         showext = FALSE, 
                         rastlut = NULL, 
                         rast.NODATA = NULL, 
-                        na.rm = TRUE, 
                         savedata = FALSE, 
                         savedata_opts = NULL) { 
   ##################################################################################### 
@@ -120,7 +123,7 @@ spZonalRast <- function(polyv,
   if (gui) showext=savedata=overwrite <- NULL 
  
   ## Set global variables
-  count <- NULL
+  count=ignoreValue <- NULL
   
   ## Set savedata defaults
   savedata_defaults_list <- formals(savedata_options)[-length(formals(savedata_options))]
@@ -148,19 +151,30 @@ spZonalRast <- function(polyv,
   ################################################################## 
   ## Check dsn, layer 
   spobj <- pcheck.spatial(layer=polyv, dsn=polyv_dsn, gui=gui, 
-		caption="Polygon zones?") 
+		                      caption="Polygon zones?") 
+  
+  ## Validate polygon
+  if (validate) {
+    spobj <- sf::st_make_valid(spobj, 
+                               geos_method = 'valid_structure', 
+                               geos_keep_collapsed = FALSE)
+    spobj <- sf::st_cast(spobj)
+  }
  
   ## Check polyv.att 
   polyv.att <- pcheck.varchar(var2check=polyv.att, varnm="polyv.att", 
-		gui=gui, checklst=names(spobj), caption="Zonal attribute",  
-		warn=paste(polyv.att, "not in polyv"), stopifnull=TRUE) 
+		             gui=gui, checklst=names(spobj), caption="Zonal attribute",  
+		             warn=paste(polyv.att, "not in polyv"), stopifnull=TRUE) 
     
   ## Get raster info 
   ########################################################  
-
+  if (length(rastfn) > 1) {
+    stop("only one raster is allowed... use spGetAuxiliary for bulk zonal means with extract=FALSE")
+  }
+  
   ## Verify rasters 
   rastfn <- suppressWarnings(getrastlst(rastfn, rastfolder, 
-		stopifLonLat=TRUE, gui=gui))
+		                         stopifLonLat=TRUE, gui=gui))
 
   ## Get names of raster 
   rastnm <- basename.NoExt(rastfn) 
@@ -173,10 +187,10 @@ spZonalRast <- function(polyv,
 
   ## Check zonalstat     
   zonalstatlst <- c("mean", "sum", "majority", "minority", "variety", 
-	"npixels", "count", "proportion") 
+	                  "npixels", "count", "proportion") 
   zonalstat <- pcheck.varchar(var2check=zonalstat, varnm="zonalstat", 
-	gui=gui, checklst=zonalstatlst, caption="Zonal statistic(s)", 
-	stopifnull=TRUE, multiple=TRUE) 
+	         gui=gui, checklst=zonalstatlst, caption="Zonal statistic(s)", 
+	         stopifnull=TRUE, multiple=TRUE) 
     
   ## Check bands 
   if (!is.null(bands)) { 
@@ -208,6 +222,9 @@ spZonalRast <- function(polyv,
     outname <- rastnm 
   } 
 
+  ## Check validate
+  validate <- pcheck.logical(validate, "Validate polys?", "NO")
+  
   ## Check showext     
   showext <- pcheck.logical(showext, varnm="showext",  
 		title="Plot extents?", first="YES", gui=gui) 
@@ -255,15 +272,25 @@ spZonalRast <- function(polyv,
   ## check if bbox2 is within bbox1
   check.extents(bbox1, bbox2, showext, layer1nm=rastnm, layer2nm="polv",
 			stopifnotin=TRUE)
-  dtype <- rasterInfo(rastfn)$datatype
-  NODATAval <- rasterInfo(rastfn)$nodata_value
-  if (is.null(rast.NODATA) || is.na(rast.NODATA)) {
-    rast.NODATA <- NODATAval[1]
+			
+  ## Get datatype and NODATA value from raster
+  dtype <- rasterInfo(rastfn)$datatype[1]
+  NODATAval <- rasterInfo(rastfn)$nodata_value[1]
+  
+  ## Check rast.NODATA... add rast.NODATA values to ignoreValues if not already defined in rast
+  if (!is.null(rast.NODATA) && all(!is.na(rast.NODATA))) {
+    if (NODATAval %in% rast.NODATA) {
+	    message("the NODATA value of ", rastnm, " is ", NODATAval, " and will be removed from the zonal calculations")
+      rast.NODATA <- rast.NODATA[!rast.NODATA %in% NODATAval]  
+    }
+	  if (length(rast.NODATA) > 0) {
+	    ignoreValue <- c(ignoreValue, rast.NODATA)
+	  }
   }
-  if (is.na(rast.NODATA)) {
-    rast.NODATA <- NULL
+  if (length(ignoreValue) > 0) {
+    message("values ignored in zonal calculations: ", toString(ignoreValue))
   }
-
+  
   zonalext <- data.table(unique(spobjprj[[polyv.att]])) 
   setnames(zonalext, polyv.att) 
   setkeyv(zonalext, polyv.att) 
@@ -282,7 +309,7 @@ spZonalRast <- function(polyv,
       atts[atts == "count"] <- "npixels"  
       zstats <- setDT(zonalStats(src=spobjprj, attribute=polyv.att, 
                             rasterfile=rastfn, pixelfun=pixelfun, band=b, na.rm=TRUE, 
-                            ignoreValue=rast.NODATA)) 
+                            ignoreValue=ignoreValue)) 
       zstats <- zstats[, c("zoneid", atts), with=FALSE] 
       var.name <- paste(prename, atts, sep=".") 
       setnames(zstats, names(zstats)[-1], var.name) 
@@ -302,7 +329,7 @@ spZonalRast <- function(polyv,
 
     if (any(zonalstat == "majority")) { 
       zstats <- setDT(zonalMajority(src=spobjprj, attribute=polyv.att, rasterfile=rastfn,
-		band=b, na.rm=TRUE, ignoreValue=rast.NODATA)) 
+		                        band=b, na.rm=TRUE, ignoreValue=ignoreValue)) 
       zstats <- zstats[, c("zoneid", "value")] 
       var.name <- paste(prename, "majority", sep=".") 
       setnames(zstats, names(zstats)[-1], var.name) 
@@ -338,7 +365,7 @@ spZonalRast <- function(polyv,
     if (any(zonalstat == "variety")) { 
       zstats <- setDT(zonalVariety(src=spobjprj, attribute=polyv.att, 
                             rasterfile=rastfn, band=b, na.rm=TRUE, 
-                            ignoreValue=rast.NODATA)) 
+                            ignoreValue=ignoreValue)) 
       zstats <- zstats[, c("zoneid", "value")] 
       var.name <- paste(prename, "variety", sep=".") 
       setnames(zstats, names(zstats)[-1], var.name) 
@@ -355,7 +382,7 @@ spZonalRast <- function(polyv,
  
     if (any(zonalstat %in% c("count", "proportion"))) { 
       zstats <- setDT(zonalFreq(src=spobjprj, attribute=polyv.att,
-                          rasterfile=rastfn, band=b, na.rm=na.rm, ignoreValue=rast.NODATA)) 
+                          rasterfile=rastfn, band=b, na.rm=TRUE, ignoreValue=ignoreValue)) 
       newvar <- "value" 
       if (!is.null(rastlut)) { 
         LUTvar <- names(rastlut)[1] 

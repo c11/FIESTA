@@ -10,12 +10,13 @@ spPoly2Rast(
   polyv.att,
   polyv.lut = NULL,
   rastfn.template = NULL,
+  validate = FALSE,
   NODATA = NULL,
   outfolder = NULL,
   outfn = "polyrast",
   outext = "img",
   outfn.pre = NULL,
-  outfn.date = TRUE,
+  outfn.date = FALSE,
   overwrite = FALSE
 )
 }
@@ -31,11 +32,16 @@ object.}
 
 \item{polyv.att}{String. Name of attribute in polyv to rasterize.}
 
-\item{polyv.lut}{Data frame. Look up table of codes, if polyv.att is
-character or want to group codes.}
+\item{polyv.lut}{Data frame. Lookup table of codes, if polyv.att is
+character or want to group codes. The lookup table must be data.frame  
+including polyv.att and another column with classes.}
 
 \item{rastfn.template}{String. Full path name of raster to use as template
 for new raster.}
+
+\item{validate}{Logical. If TRUE, validates polyv and clippolyv before 
+clipping. Uses sf::st_make_valid with default parameters 
+(geos_method='valid_structure', geos_keep_collapsed=FALSE).}
 
 \item{NODATA}{Number. The NODATA value for background values. If NODATA is
 NULL, and a NODATA value is defined on the rastfn.template raster, the 

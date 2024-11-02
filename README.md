@@ -1,5 +1,11 @@
 
-<!-- [![GitHub Super-Linter](https://github.com/USDAForestService/FIESTA/workflows/Lint%20Code%20Base/badge.svg)](https://github.com/marketplace/actions/super-linter) -->
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/USDAForestService/FIESTA/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/USDAForestService/FIESTA/actions/workflows/R-CMD-check.yaml)
+[![CRAN
+status](https://www.r-pkg.org/badges/version/FIESTA)](https://CRAN.R-project.org/package=FIESTA)
+[![CRAN checks](https://badges.cranchecks.info/worst/FIESTA.svg)](https://cran.r-project.org/web/checks/check_results_FIESTA.html)
+[![r-universe status](https://usdaforestservice.r-universe.dev/badges/FIESTA)](https://usdaforestservice.r-universe.dev/FIESTA)
+<!-- badges: end -->
 
 <b>Authors:</b> Frescino, Tracey S.; Moisen, Gretchen G.; Patterson,
 Paul L.; Toney, Chris; White, Grayson W.

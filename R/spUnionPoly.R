@@ -28,6 +28,9 @@
 #' pathname) of layer to union. The dsn varies by driver. See gdal OGR vector
 #' formats (https://www.gdal.org/ogr_formats.html). Optional if polyv2 is sf
 #' object.
+#' @param validate Logical. If TRUE, validates polyv and clippolyv before 
+#' clipping. Uses sf::st_make_valid with default parameters 
+#' (geos_method='valid_structure', geos_keep_collapsed=FALSE).
 #' @param showext Logical. If TRUE, layer extents are displayed in plot window.
 #' @param areacalc Logical. If TRUE, calculate area of unioned polygons and
 #' append to attribute table (See details).
@@ -71,11 +74,8 @@
 #'                       package = "FIESTA")
 #' WYbh <- spImportSpatial(WYbhfn)
 #'
-#' # Load in USAco data from geodata package
-#' USAco <- geodata::gadm(country="United States", level=2, path=tempdir())    
-#' 
 #' # Generate unioned `sf` object
-#' polyUnion <- spUnionPoly(polyv1 = USAco[USAco$NAME_1 == "Wyoming",], 
+#' polyUnion <- spUnionPoly(polyv1 = stunitco[stunitco$STATENM == "Wyoming",], 
 #'                          polyv2 = WYbh, 
 #'                          areacalc = TRUE)
 #'                          
@@ -87,6 +87,7 @@ spUnionPoly <- function(polyv1,
                         polyv1_dsn = NULL, 
                         polyv2, 
                         polyv2_dsn = NULL, 
+                        validate = FALSE,
                         showext = FALSE, 
                         areacalc = FALSE, 
                         areavar = "ACRES_GIS", 
@@ -145,6 +146,23 @@ spUnionPoly <- function(polyv1,
 		caption="Polygon1?")
   polyv2x <- pcheck.spatial(layer=polyv2, dsn=polyv2_dsn, gui=gui, 
 		caption="Polygon2?")
+  
+  ## Check validate
+  validate <- pcheck.logical(validate, "Validate polys?", "NO")
+  
+  ## Validate polygon
+  if (validate) {
+    polyv1x <- sf::st_make_valid(polyv1x, 
+                                 geos_method = 'valid_structure', 
+                                 geos_keep_collapsed = FALSE)
+    polyv1x <- sf::st_cast(polyv1x)
+    
+    polyv2x <- sf::st_make_valid(polyv2x, 
+                                 geos_method = 'valid_structure', 
+                                 geos_keep_collapsed = FALSE)
+    polyv2x <- sf::st_cast(polyv2x)
+  }
+  
 
   ## Check areacalc
   areacalc <- pcheck.logical(areacalc, "Calculate area?", "YES")

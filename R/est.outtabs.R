@@ -12,6 +12,9 @@ est.outtabs <- function(esttype, phototype="PCT", photoratio=FALSE, sumunits=FAL
 
   ## Set global variables
   estn=pse=keepvars=TOTAL=totest=rowest=colest=grpest <- NULL
+  rowvar <- ifelse(is.null(rowvar), "NONE", rowvar)
+  colvar <- ifelse(is.null(colvar), "NONE", colvar)
+  
 
   #####  TITLE INFO FOR TABLE COLUMNS
   ########################################################
@@ -41,8 +44,8 @@ est.outtabs <- function(esttype, phototype="PCT", photoratio=FALSE, sumunits=FAL
 
   if (!is.null(divideby)) {
     dividebynum <- ifelse(divideby == "hundred", 100,
-				ifelse(divideby == "thousand", 1000,
-					ifelse(divideby == "million", 1000000, 1)))
+				              ifelse(divideby == "thousand", 1000,
+					                ifelse(divideby == "million", 1000000, 1)))
     estnmd <- paste(estnm, divideby, sep=".")
     senmd <- paste(senm, divideby, sep=".")
   } else {
@@ -99,7 +102,7 @@ est.outtabs <- function(esttype, phototype="PCT", photoratio=FALSE, sumunits=FAL
     }
     if (allin1) {
       char.width <- max(char.width,
-		max(nchar(na.omit(round(unit_rowest[[psenm]], pseround)))))
+		       max(nchar(na.omit(round(unit_rowest[[psenm]], pseround)))))
     }
   }
 
@@ -117,7 +120,7 @@ est.outtabs <- function(esttype, phototype="PCT", photoratio=FALSE, sumunits=FAL
     }
     if (allin1) {
       char.width <- max(char.width,
-		max(nchar(na.omit(round(unit_colest[[psenm]], pseround)))))
+		       max(nchar(na.omit(round(unit_colest[[psenm]], pseround)))))
     }
   }
 
@@ -135,22 +138,27 @@ est.outtabs <- function(esttype, phototype="PCT", photoratio=FALSE, sumunits=FAL
     }
     if (allin1) {
       char.width <- max(char.width,
-		max(nchar(na.omit(round(unit_grpest[[psenm]], pseround)))))
+		       max(nchar(na.omit(round(unit_grpest[[psenm]], pseround)))))
     }
   }
 
   if (sumunits) {
     ## Group estimates
-    if (!is.null(uniquerow))
-      keepvars.row <- names(uniquerow)[names(uniquerow) != rowvar]
-    if (!is.null(uniquecol))
-      keepvars.col <- names(uniquecol)[names(uniquecol) != colvar]
+    #if (!is.null(uniquerow))
+    #  keepvars.row <- names(uniquerow)[names(uniquerow) != rowvar]
+    #if (!is.null(uniquecol))
+    #  keepvars.col <- names(uniquecol)[names(uniquecol) != colvar]
+	  keepvars.row=keepvars.col <- NULL
 
     ## GROUP TOTAL TABLE
     if (!is.null(unit_totest)) {
-      totest <- groupUnits(unit_totest, estncol=estnm, estncol.var=estnm.var,
-		domain="TOTAL", esttype=esttype, rowgrpnm=rowgrpnm, unitvar=unitvar,
-		areavar=areavar, phototype=phototype, photoratio=photoratio)
+      totest <- 
+        groupUnits(unit_totest, 
+                   estncol = estnm, estncol.var = estnm.var,
+		               domain = "TOTAL", esttype = esttype, 
+		               rowgrpnm = rowgrpnm, 
+		               unitvar = unitvar, areavar = areavar, 
+		               phototype = phototype, photoratio = photoratio)
       if (esttype != "RATIO" && !is.null(dividebynum)) {
         totest[[estnmd]] <- totest[[estnm2]] / dividebynum
         totest[[senmd]] <- totest[[senm2]] / dividebynum
@@ -164,10 +172,13 @@ est.outtabs <- function(esttype, phototype="PCT", photoratio=FALSE, sumunits=FAL
       }
     }
     if (!is.null(unit_rowest)) {
-      rowest <- groupUnits(tabest=unit_rowest, domain=rowvar, estncol=estnm,
-			estncol.var=estnm.var, esttype=esttype, rowgrpnm=rowgrpnm,
-			unitvar=unitvar, areavar=areavar, phototype=phototype,
-			photoratio=photoratio, keepvars=keepvars.row)
+      rowest <- 
+        groupUnits(tabest = unit_rowest, domain = rowvar, 
+                   estncol = estnm, estncol.var = estnm.var, 
+                   esttype = esttype, rowgrpnm = rowgrpnm,
+			             unitvar = unitvar, areavar = areavar, 
+			             phototype = phototype, photoratio = photoratio, 
+			             keepvars = keepvars.row)
       if (esttype != "RATIO" && !is.null(dividebynum)) {
         rowest[[estnmd]] <- rowest[[estnm2]] / dividebynum
         rowest[[senmd]] <- rowest[[senm2]] / dividebynum
@@ -179,14 +190,17 @@ est.outtabs <- function(esttype, phototype="PCT", photoratio=FALSE, sumunits=FAL
       rowest[[psenm]] <- rowest[[psenm]]
       if (allin1) {
         char.width <- max(char.width,
-		max(nchar(na.omit(round(rowest[[psenm]], pseround)))))
+		        max(nchar(na.omit(round(rowest[[psenm]], pseround)))))
       }
     }
-    if (!is.null(unit_colest)) {
-      colest <- groupUnits(tabest=unit_colest, domain=colvar, estncol=estnm,
-			estncol.var=estnm.var, esttype=esttype, unitvar=unitvar,
-			areavar=areavar, phototype=phototype, photoratio=photoratio,
-			keepvars=keepvars.col)
+	  if (!is.null(unit_colest)) {
+      colest <- 
+        groupUnits(tabest = unit_colest, domain = colvar, 
+                   estncol = estnm, estncol.var = estnm.var, 
+                   esttype = esttype, 
+                   unitvar = unitvar, areavar = areavar, 
+                   phototype = phototype, photoratio = photoratio,
+			             keepvars = keepvars.col)
       if (esttype != "RATIO" && !is.null(dividebynum)) {
         colest[[estnmd]] <- colest[[estnm2]] / dividebynum
         colest[[senmd]] <- colest[[senm2]] / dividebynum
@@ -198,15 +212,18 @@ est.outtabs <- function(esttype, phototype="PCT", photoratio=FALSE, sumunits=FAL
       colest[[psenm]] <- colest[[psenm]]
       if (allin1) {
         char.width <- max(char.width,
-		max(nchar(na.omit(round(colest[[psenm]], pseround)))))
+		       max(nchar(na.omit(round(colest[[psenm]], pseround)))))
       }
-    }
+	  }	
     if (!is.null(unit_grpest)) {
-      grpest <- groupUnits(tabest=unit_grpest, domain=rowvar, estncol=estnm,
-			estncol.var=estnm.var, domvar2=colvar, esttype=esttype,
-			rowgrpnm=rowgrpnm, unitvar=unitvar, areavar=areavar,
-			phototype=phototype, photoratio=photoratio,
-			keepvars=c(keepvars.row, keepvars.col))
+      grpest <- 
+        groupUnits(tabest = unit_grpest, domain = rowvar, 
+                   estncol = estnm, estncol.var = estnm.var, 
+                   domvar2 = colvar, esttype = esttype,
+			             rowgrpnm = rowgrpnm, 
+			             unitvar = unitvar, areavar = areavar,
+			             phototype = phototype, photoratio = photoratio,
+			             keepvars = c(keepvars.row, keepvars.col))
       if (esttype != "RATIO" && !is.null(dividebynum)) {
         grpest[[estnmd]] <- grpest[[estnm2]] / dividebynum
         grpest[[senmd]] <- grpest[[senm2]] / dividebynum
@@ -218,7 +235,7 @@ est.outtabs <- function(esttype, phototype="PCT", photoratio=FALSE, sumunits=FAL
       grpest[[psenm]] <- grpest[[psenm]]
       if (allin1) {
         char.width <- max(char.width,
-		max(nchar(na.omit(round(grpest[[psenm]], pseround)))))
+		       max(nchar(na.omit(round(grpest[[psenm]], pseround)))))
       }
     }
   }
@@ -227,35 +244,42 @@ est.outtabs <- function(esttype, phototype="PCT", photoratio=FALSE, sumunits=FAL
   ###################################################################
   ## GENERATE OUTPUT TABLES
   ###################################################################
-  if (colvar == "NONE") {
+  if (is.null(colvar) || colvar == "NONE") {
     if (sumunits) {
       if (rowvar == "TOTAL") {
         if (allin1) {
-          estpse <- data.frame(TOTAL="Total", allin1f(round(totest[[estnmd]], estround),
-			round(totest[[psenm]], pseround), estnull=estnull, psenull=psenull,
-			char.width=char.width), stringsAsFactors=FALSE)
+          estpse <- 
+            data.frame(TOTAL = "Total", 
+                       allin1f(round(totest[[estnmd]], estround),
+			                 round(totest[[psenm]], pseround), 
+			                 estnull = estnull, psenull = psenull,
+			                 char.width = char.width), 
+			                 stringsAsFactors = FALSE)
           setnames(estpse, c("TOTAL", title.yhatpse))
-
         } else {
-          estpse <- data.table(TOTAL="Total",
-			totest[, c(estnmd, psenm), with=FALSE],
-			stringsAsFactors=FALSE)
-          estpse[[estnmd]] <- round(estpse[[estnmd]], estround)
-          estpse[[psenm]] <- round(estpse[[psenm]], pseround)
+          estpse <- 
+            data.table(TOTAL = "Total",
+			                 totest[, c(estnmd, psenm), with=FALSE], stringsAsFactors=FALSE)
+                       estpse[[estnmd]] <- round(estpse[[estnmd]], estround)
+                       estpse[[psenm]] <- round(estpse[[psenm]], pseround)
           names(estpse) <- c("TOTAL", title.yhat, title.yhat.pse)
         }
         rowtotal <- FALSE
 
       } else {  ##  rowvar != "TOTAL"
         ## Get estimates
-        estcross <- crosstabx(rowest, rowvar, estnmd, psenm, allin1=allin1,
-		estnull=estnull, psenull=psenull, char.width=char.width,
-		estround=estround, pseround=pseround)
+        estcross <- 
+          crosstabx(rowest, rowvar, estnmd, psenm, allin1=allin1,
+		                estnull = estnull, psenull = psenull, 
+		                char.width = char.width,
+		                estround = estround, pseround = pseround)
 
         if (allin1) {
-          tottab <- data.frame(TOTAL="Total", allin1f(totest[[estnmd]],
-			totest[[psenm]], char.width=char.width, estnull=estnull,
-			psenull=psenull, estround=estround, pseround=pseround), stringsAsFactors=FALSE)
+          tottab <- 
+            data.frame(TOTAL = "Total", allin1f(totest[[estnmd]],
+			                 totest[[psenm]], char.width=char.width, estnull=estnull,
+			                 psenull=psenull, estround=estround, pseround=pseround), 
+			                 stringsAsFactors=FALSE)
           setnames(tottab, c("TOTAL", title.yhatpse))
 
           estpse <- estcross
@@ -304,9 +328,9 @@ est.outtabs <- function(esttype, phototype="PCT", photoratio=FALSE, sumunits=FAL
       if (savedata) {
         suppressWarnings(
         save1tab(tab=setDF(estpse), tab.title=title.estpse, outfn=outfn.estpse,
-			outfolder=outfolder, allin1=allin1, coltitlerow=FALSE,
-			addtitle=addtitle, rowtotal=rowtotal, outfn.date=outfn.date,
-			overwrite=overwrite, charvars=title.rnames, cols2format=title.yhat) )
+			           outfolder=outfolder, allin1=allin1, coltitlerow=FALSE,
+			           addtitle=addtitle, rowtotal=rowtotal, outfn.date=outfn.date,
+			           overwrite=overwrite, charvars=title.rnames, cols2format=title.yhat) )
       }
 
     } else {  ## colvar == NONE, sumunits = FALSE
@@ -497,16 +521,24 @@ est.outtabs <- function(esttype, phototype="PCT", photoratio=FALSE, sumunits=FAL
 #      estunits <- unique(unit_grpest[[unitvar]])
 #      numunits <- length(estunits)
       numunits <- 1
-      tabs <- crossxbyunit(unit=NULL, unit_grpest=grpest,
-		unit_rowest=rowest, unit_colest=colest, unit_totest=totest,
-		unitvar=unitvar, rowvar=rowvar, colvar=colvar,
-		estnm=estnmd, psenm=psenm, allin1, char.width, estnull, psenull,
-		estround=estround, pseround=pseround,
-		rowgrp=rowgrp, rowgrpnm=rowgrpnm, title.rnames=title.rnames, 
-		numunits=numunits, savedata=savedata, addtitle,
-		returntitle, outfn.estpse, title.estpse, title.est, title.pse,
-		title.ref, outfolder, outfn.date, overwrite, esttype, phototype,
-		rnames, title.colvar, title.unitvar)
+      tabs <- 
+        crossxbyunit(unit = NULL, unit_grpest = grpest,
+		                 unit_rowest = rowest, unit_colest = colest, 
+		                 unit_totest = totest,
+		                 unitvar = unitvar, 
+		                 rowvar = rowvar, colvar = colvar,
+		                 estnm = estnmd, psenm = psenm, 
+		                 allin1, char.width, estnull, psenull,
+		                 estround = estround, pseround = pseround,
+		                 rowgrp = rowgrp, rowgrpnm = rowgrpnm, 
+		                 title.rnames = title.rnames, 
+		                 numunits = numunits, 
+		                 savedata = savedata, addtitle,
+		                 returntitle, outfn.estpse, 
+		                 title.estpse, title.est, title.pse,
+		                 title.ref, outfolder, outfn.date, 
+		                 overwrite, esttype, phototype,
+		                 rnames, title.colvar, title.unitvar)
       est2return <- tabs[[1]]
       if (length(tabs) == 2)
         pse2return <- tabs[[2]]
@@ -567,7 +599,7 @@ est.outtabs <- function(esttype, phototype="PCT", photoratio=FALSE, sumunits=FAL
         suppressWarnings(unit_totest[, (unitvars) := tstrsplit(get(unitvar), "-", fixed=TRUE)])
         unit_totest[, (unitvar) := NULL]
         setcolorder(unit_totest, c(unitvars,
-		names(unit_totest)[!names(unit_totest) %in% unitvars]))
+		    names(unit_totest)[!names(unit_totest) %in% unitvars]))
       }
       rawdat$unit_totest <- setDF(unit_totest)
       rawdat.tabs <- c(rawdat.tabs, "unit_totest")
@@ -585,11 +617,11 @@ est.outtabs <- function(esttype, phototype="PCT", photoratio=FALSE, sumunits=FAL
           suppressWarnings(unit_rowest[, (unitvars) := tstrsplit(get(unitvar), "-", fixed=TRUE)])
           unit_rowest[, (unitvar) := NULL]
           setcolorder(unit_rowest, c(unitvars,
-			names(unit_rowest)[!names(unit_rowest) %in% unitvars]))
+			    names(unit_rowest)[!names(unit_rowest) %in% unitvars]))
         }
-        ## Set order of table
-        setorderv(unit_rowest, c(unitvars, rowvar))
 
+        ## Set order of table
+        setorderv(unit_rowest, c(unitvars, rowvar))		
         setnames(unit_rowest, rowvar, title.rowvar)
         rawdat$unit_rowest <- setDF(unit_rowest)
         rawdat.tabs <- c(rawdat.tabs, "unit_rowest")
@@ -609,7 +641,7 @@ est.outtabs <- function(esttype, phototype="PCT", photoratio=FALSE, sumunits=FAL
           suppressWarnings(unit_colest[, (unitvars) := tstrsplit(get(unitvar), "-", fixed=TRUE)])
           unit_colest[, (unitvar) := NULL]
           setcolorder(unit_colest, c(unitvars,
-			names(unit_colest)[!names(unit_colest) %in% unitvars]))
+			    names(unit_colest)[!names(unit_colest) %in% unitvars]))
         }
         ## Set order of table
         setorderv(unit_colest, c(unitvars, colvar))
@@ -635,7 +667,7 @@ est.outtabs <- function(esttype, phototype="PCT", photoratio=FALSE, sumunits=FAL
           suppressWarnings(unit_grpest[, (unitvars) := tstrsplit(get(unitvar), "-", fixed=TRUE)])
           unit_grpest[, (unitvar) := NULL]
           setcolorder(unit_grpest, c(unitvars,
-			names(unit_grpest)[!names(unit_grpest) %in% unitvars]))
+			    names(unit_grpest)[!names(unit_grpest) %in% unitvars]))
         }
         ## Set order of table
         setorderv(unit_grpest, c(unitvars, rowvar, colvar))

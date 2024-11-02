@@ -10,6 +10,8 @@ spClipPoly(
   clippolyv,
   clippolyv_dsn = NULL,
   clippolyv.filter = NULL,
+  buffdist = NULL,
+  validate = FALSE,
   showext = FALSE,
   areacalc = FALSE,
   areaunits = "ACRES",
@@ -37,6 +39,13 @@ vector formats (https://www.gdal.org/ogr_formats.html). Optional if
 clippolyv_layer is an R object.}
 
 \item{clippolyv.filter}{String. Filter to subset clippolyv spatial layer.}
+
+\item{buffdist}{Number. The distance to buffer the polygon before clipping.
+Uses sf::st_buffer. The distance is based on units of polygon, st_crs(x)$units.}
+
+\item{validate}{Logical. If TRUE, validates polyv and clippolyv before 
+clipping. Uses sf::st_make_valid with default parameters 
+(geos_method='valid_structure', geos_keep_collapsed=FALSE).}
 
 \item{showext}{Logical. If TRUE, layer extents are displayed in plot window.}
 
@@ -94,15 +103,12 @@ has more than 1 record, it will be returned but not exported.
 }
 \examples{
 \dontrun{
-# Load in USAco data from geodata package
-USAco <- geodata::gadm(country="United States", level=2, path=tempdir())
-
 # Set up data from FIESTA
 WYbhfn <- system.file("extdata", "sp_data/WYbighorn_adminbnd.shp",
                                     package = "FIESTA"))
 
 # Clip polygon with WY Bighorn object from FIESTA
-WYbhco <- spClipPoly(polyv = USAco,
+WYbhco <- spClipPoly(polyv = stunitco,
                      clippolyv = WYbhfn)     
 }
 }

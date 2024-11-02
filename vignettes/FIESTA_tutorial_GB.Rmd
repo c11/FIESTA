@@ -35,6 +35,9 @@ knitr::knit_hooks$set(
 )
 ```
 
+```{r, echo=-1}
+data.table::setDTthreads(2)
+```
 
 ## Green-Book (GB) module overview
 
@@ -247,7 +250,6 @@ In this example, we use the sample Wyoming data (2013 Evaluation) stored in `FIE
 
 
 ```{r, results = FALSE, message = F}
-
 GBpopdat <- modGBpop(
   popTabs = list(cond = FIESTA::WYcond,          # FIA plot/condition data
                  tree = FIESTA::WYtree,          # FIA tree data
@@ -262,7 +264,6 @@ GBpopdat <- modGBpop(
   stratalut = WYstratalut,        # strata classes and pixels counts
   strata_opts = strata_options(getwt = TRUE)              # strata options
   )
-
 
 ```
 
@@ -498,7 +499,7 @@ The following estimates match output from [EVALIDator](https://apps.fs.usda.gov/
 area1.1 <- modGBarea(
     GBpopdat = GBpopdat,      # pop - population calculations for WY, post-stratification
     landarea = "FOREST",      # est - forest land filter
-    sumunits = TRUE,          # est - sum estimation units to population
+    sumunits = TRUE          # est - sum estimation units to population
     )
 
 ```
@@ -708,7 +709,6 @@ Note: Since we only have one estimation unit within the population of interest, 
   Let's also add a few more table options to control the forest type groups displayed in the table (rowlut) and fill the NULL values with 0s (estnull).
 
 ```{r}
-
 area2.2 <- modGBarea(
     GBpopdat = GBpopdat.bh,        # pop - population calculations for Bighorn NF, post-stratification
     landarea = "FOREST",           # est - forest land filter
@@ -1238,6 +1238,7 @@ tree2.1 <- modGBtree(
     returntitle = TRUE,          # out - return title information
     table_opts = tab_opts
     )
+tree2.1$est
 
 ```
 
@@ -1260,6 +1261,7 @@ head(tree2.1$est)
 We can also examine dead trees with the filter `estvar.filter = "STATUSCD == 2 & STANDING_DEAD_CD == 1"`. 
 
 ```{r}
+
 ## Net cubic-foot volume of dead trees (at least 5 inches diameter) by species and cause of death, 
 ##    Wyoming, 2011-2013
 tree2.2 <- modGBtree(

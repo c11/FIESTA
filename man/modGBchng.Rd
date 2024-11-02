@@ -6,7 +6,7 @@
 \usage{
 modGBchng(
   GBpopdat,
-  chngtype = "TOTAL",
+  chngtype = "total",
   landarea = "FOREST",
   pcfilter = NULL,
   rowvar = NULL,
@@ -17,6 +17,7 @@ modGBchng(
   table_opts = NULL,
   title_opts = NULL,
   savedata_opts = NULL,
+  cdomdat = NULL,
   gui = FALSE,
   ...
 )
@@ -24,7 +25,7 @@ modGBchng(
 \arguments{
 \item{GBpopdat}{List. Population data objects returned from modGBpop().}
 
-\item{chngtype}{String. The type of change estimates ('TOTAL', 'ANNUAL').}
+\item{chngtype}{String. The type of change estimates ('total', 'annual').}
 
 \item{landarea}{String. The sample area filter for estimates ("ALL",
 "FOREST", "TIMBERLAND").  If landarea=FOREST, filtered to COND_STATUS_CD =
@@ -54,6 +55,8 @@ options.}
 
 \item{savedata_opts}{List. See help(savedata_options()) for a list
 of options. Only used when savedata = TRUE.}
+
+\item{cdomdat}{Data.frame of condition-domain data. Output from modGBchng().}
 
 \item{gui}{Logical. If gui, user is prompted for parameters.}
 
@@ -181,7 +184,7 @@ on plot (i.e. accessible nonforest, nonsampled nonforest)\cr
 \tab RESERVCD \tab If landarea=TIMBERLAND. Reserved status.\cr
 
 \tab pltassgn \tab puniqueid \tab Unique identifier for each plot, to link
-to cond (ex. CN).\cr 
+to cond (e.g., CN).\cr 
 \tab \tab STATECD \tab Identifies state each plot is located in.\cr \tab \tab INVYR \tab Identifies inventory year of each
 plot.\cr 
 \tab \tab PLOT_STATUS_CD \tab Status of each plot (i.e. sampled, nonsampled). If not included, all plots are assumed as sampled.\cr }

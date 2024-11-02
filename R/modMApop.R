@@ -275,6 +275,8 @@ modMApop <- function(popType="VOL",
   ONEUNIT=n.total=expcondtab=bndx <- NULL
   strata <- FALSE
   adj <- ifelse(adjplot, "plot", "none")
+  areawt2 <- NULL
+  pvars2keep <- NULL
   
   
   ##################################################################
@@ -322,10 +324,11 @@ modMApop <- function(popType="VOL",
   }
   
   ## Set user-supplied popFilters values
+  popFilter2 <- popFilters_defaults_list
   if (length(popFilter) > 0) {
     for (i in 1:length(popFilter)) {
       if (names(popFilter)[[i]] %in% names(popFilters_defaults_list)) {
-        assign(names(popFilter)[[i]], popFilter[[i]])
+		popFilter2[[names(popFilter)[[i]]]] <- popFilter[[i]]
       } else {
         stop(paste("Invalid parameter: ", names(popFilter)[[i]]))
       }
@@ -463,13 +466,21 @@ modMApop <- function(popType="VOL",
   DWM_types <- c("CWD", "FWD_SM", "FWD_LG", "DUFF")
   evalTyplst <- c("ALL", "CURR", "VOL", "LULC", "P2VEG", "INV", "DWM", "CHNG", "GRM")
   popType <- pcheck.varchar(var2check=popType, varnm="popType", gui=gui,
-		checklst=evalTyplst, caption="popType", multiple=FALSE, stopifnull=TRUE)
-  popevalid <- as.character(evalid)
-  if (!is.null(evalid)) {
+		checklst=evalTyplst, caption="popType", multiple=FALSE, stopifinvalid=FALSE)
+  if (is.null(popType)) {
+    message("popType is invalid... must be from following list:\n", toString(evalTyplst))
+  }
+  popevalid <- as.character(popFilter2$evalid)
+  if (!is.null(popevalid)) {
     substr(popevalid, nchar(popevalid)-1, nchar(popevalid)) <- 
-		formatC(FIESTAutils::ref_popType[FIESTAutils::ref_popType$popType %in% popType, "EVAL_TYP_CD"], width=2, flag="0")
+		formatC(FIESTAutils::ref_popType[FIESTAutils::ref_popType$popType %in% popType, "EVAL_TYP_CD"], 
+		width=2, flag="0")
+    #evalid <- as.character(evalid)
+    #substr(evalid, nchar(evalid)-1, nchar(evalid)) <- "01"
   } 
-
+  if (popType %in% c("GROW", "MORT", "REMV")) {
+    popType <- "GRM"
+  }
  
   ###################################################################################
   ## Load data
@@ -587,12 +598,11 @@ modMApop <- function(popType="VOL",
   ###################################################################################
   pltcheck <- check.popdataPLT(dsn=dsn, tabs=popTabs, tabIDs=popTabIDs, 
       pltassgn=pltassgn, pltassgnid=pltassgnid, pjoinid=pjoinid, 
-      module="MA", popType=popType, popevalid=popevalid, adj=adj, ACI=ACI, 
-      evalid=evalid, measCur=measCur, measEndyr=measEndyr, 
-      measEndyr.filter=measEndyr.filter, invyrs=invyrs, intensity=intensity,
-      nonsamp.pfilter=nonsamp.pfilter, unitarea=unitarea, areavar=areavar, 
-      unitvar=unitvar, unitvar2=unitvar2, areaunits=areaunits, 
-      unit.action=unit.action, prednames=prednames, predfac=predfac)
+      module="MA", popType=popType, popevalid=popevalid, adj=adj, 
+	  popFilter=popFilter2, nonsamp.pfilter=nonsamp.pfilter, 
+	  unitarea=unitarea, areavar=areavar, unitvar=unitvar, 
+	  unitvar2=unitvar2, areaunits=areaunits, unit.action=unit.action, 
+      prednames=prednames, predfac=predfac, pvars2keep=pvars2keep)
   if (is.null(pltcheck)) return(NULL)
   pltassgnx <- pltcheck$pltassgnx
   pltassgnid <- pltcheck$pltassgnid
@@ -628,9 +638,11 @@ modMApop <- function(popType="VOL",
     ###################################################################################
     popcheck <- check.popdataVOL(gui=gui, 
                tabs=popTabs, tabIDs=popTabIDs, pltassgnx=pltassgnx, 
-               pfromqry=pfromqry, palias=palias, pjoinid=pjoinid, whereqry=whereqry, 
-               adj=adj, ACI=ACI, pltx=pltx, puniqueid=puniqueid, dsn=dsn, dbconn=dbconn,
-               condid="CONDID", nonsamp.cfilter=nonsamp.cfilter)
+               pfromqry=pfromqry, palias=palias, pjoinid=pjoinid, 
+			   whereqry=whereqry, adj=adj, ACI=ACI, 
+			   pltx=pltx, puniqueid=puniqueid, dsn=dsn, dbconn=dbconn,
+               condid="CONDID", nonsamp.cfilter=nonsamp.cfilter,
+			   areawt=areawt, areawt2=areawt2, pvars2keep=pvars2keep)
     if (is.null(popcheck)) return(NULL)
     condx <- popcheck$condx
     pltcondx <- popcheck$pltcondx
@@ -663,7 +675,9 @@ modMApop <- function(popType="VOL",
                   makedummy = makedummy, 
                   npixelvar = npixelvar, 
                   standardize = standardize,
-                  auxtext = "unitlut", removetext = "unitarea", )
+                  auxtext = "unitlut", 
+				  removetext = "unitarea", 
+				  AOI = popFilter2$AOIonly)
   pltassgnx <- setDT(auxdat$pltx)
   unitarea <- auxdat$unitarea
   unitvar <- auxdat$unitvar
@@ -707,6 +721,10 @@ modMApop <- function(popType="VOL",
     condx[, (unitvars) := tstrsplit(get(unitvar), "-", fixed=TRUE)]
   }
 
+  if ("MACRPROP_UNADJ" %in% names(condx) && is.character(condx$MACRPROP_UNADJ)) {
+    condx$MACRPROP_UNADJ <- as.numeric(condx$MACRPROP_UNADJ)
+  }
+  
   if (adj == "none") {
     setkeyv(condx, c(cuniqueid, condid))
   } else {
@@ -746,6 +764,53 @@ modMApop <- function(popType="VOL",
   if (is.null(key(unitarea))) {
      setkeyv(unitarea, unitvar)
   }
+  
+  
+  ###################################################################################
+  ## Add new variables to pltcondx for estimation
+  ###################################################################################
+  ## Get order of pltcondx columns
+  pltcondxcols <- names(pltcondx)
+  newcols <- {}
+  
+  if (!"LANDSTATUSCD" %in% names(pltcondx) && "LANDSTATUSCD" %in% names(pltcondx)) {
+    ## Add LANDSTATUSCD based on the following lookup table
+    LANDSTATUSlut <- data.frame(LANDSTATUS = c(101:108, 111:117),
+                    LANDSTATUSCD = c(rep(1, 6), rep(2, 2), rep(3, 6), 4),
+                    LANDSTATUSNM = c(rep("Timberland", 6), 
+                                     rep("Other forestland", 2), 
+                                     rep("Reserved productive forestland", 6),
+                                         "Reserved other forestland"))
+    pltcondx$LANDSTATUS <- with(pltcondx, COND_STATUS_CD * 100 + RESERVCD * 10 + SITECLCD)
+    pltcondx <- merge(pltcondx, LANDSTATUSlut, by="LANDSTATUS", all.x=TRUE)
+    pltcondx$LANDSTATUS <- NULL
+    newcols <- c("LANDSTATUSCD", "LANDSTATUSNM")
+  }
+
+  if (!"FORTYPGRPCD" %in% names(pltcondx) && "FORTYPCD" %in% names(pltcondx)) {
+    ## Add FORTYPGRPCD to pltcondx if not already in dataset
+    #pltcondx <- addFORTYPGRPCD(pltcondx)
+    ref_fortyp <- ref_codes[ref_codes$VARIABLE == "FORTYPCD", c("VALUE", "GROUPCD")]
+    names(ref_fortyp) <- c("FORTYPCD", "FORTYPGRPCD")
+    pltcondx <- merge(pltcondx, ref_fortyp, by="FORTYPCD", all.x=TRUE)
+    newcols <- c(newcols, "FORTYPGRPCD")
+  }
+
+  if (!"DSTRBGRP" %in% names(pltcondx) && "DSTRBCD1" %in% names(pltcondx)) {
+    ## Add FORTYPGRPCD to pltcondx if not already in dataset
+    #pltcondx <- addFORTYPGRPCD(pltcondx)
+    ref_dstrbcd <- ref_codes[ref_codes$VARIABLE == "DSTRBCD", c("VALUE", "GROUPCD")]
+    names(ref_dstrbcd) <- c("DSTRBCD1", "DSTRBGRP")
+    pltcondx <- merge(pltcondx, ref_dstrbcd, by="DSTRBCD1", all.x=TRUE)
+    newcols <- c(newcols, "DSTRBGRP")
+  }
+   
+  ## Move new columns to end of table
+  setcolorder(pltcondx, c(pltcondxcols, newcols))
+
+  
+  ## Build list of data to return
+  ###################################################################################
   returnlst <- append(returnlst, list(condx=condx, pltcondx=pltcondx, 
              cuniqueid=cuniqueid, condid=condid, ACI.filter=ACI.filter,
              unitarea=unitarea, areavar=areavar, areaunits=areaunits,

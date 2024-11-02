@@ -34,6 +34,7 @@ modGBpop(
   pltdat = NULL,
   stratdat = NULL,
   auxdat = NULL,
+  keepadjvars = FALSE,
   gui = FALSE,
   ...
 )
@@ -132,6 +133,9 @@ FIESTA::spGetStrata().}
 
 \item{auxdat}{R List object. Output data list components from
 FIESTA::spGetAuxiliary().}
+
+\item{keepadjvars}{Logical. If TRUE, keep adjustment factors from 
+pop_stratum table in FIA database.}
 
 \item{gui}{Logical. If gui, user is prompted for parameters.}
 
@@ -289,6 +293,7 @@ classes following in order, it is combined with the estimation unit previous
 in order.
 }
 \examples{
+\donttest{
 GBpopdat <- modGBpop(
 popTabs = list(cond = FIESTA::WYcond,  
                tree = FIESTA::WYtree,        
@@ -305,6 +310,7 @@ strata_opts = strata_options(getwt = TRUE)
 )
 
 str(GBpopdat, max.level = 1)
+}
 }
 \references{
 Scott, Charles T.; Bechtold, William A.; Reams, Gregory A.;

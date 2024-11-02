@@ -35,6 +35,10 @@ knitr::knit_hooks$set(
 )
 ```
 
+```{r, echo=-1}
+data.table::setDTthreads(2)
+```
+
 ## Overview
 
 `FIESTA`'s Estimation Modules combine multiple functions from `FIESTA` or other packages to generate estimates across a user-defined population(s) using different estimation strategies. Each module has an associated `mod*pop` function for compiling the population data and calculations, including adjustments for nonresponse and standardizing auxiliary data. The output form the `mod*pop` functions are input directly into the `mod*estimation` modules.
@@ -276,6 +280,6 @@ kable(required.lut,
 
 ## References
 
-Burrill, E.A., Wilson, A.M., Turner, J.A., Pugh, S.A., Menlove, J., Christiansen, G., Conkling, B.L., Winnie, D., 2018. Forest Inventory and Analysis Database [WWW Document].  St Paul MN US Dep. Agric. For. Serv. North. Res. Stn.  URL https://apps.fs.usda.gov/fia/datamart/
+Burrill, E.A., Wilson, A.M., Turner, J.A., Pugh, S.A., Menlove, J., Christiansen, G., Conkling, B.L., Winnie, D., 2018. Forest Inventory and Analysis Database [WWW Document].  St Paul MN US Dep. Agric. For. Serv. North. Res. Stn.  URL https://apps.fs.usda.gov/fia/datamart/datamart.html
 (accessed 3.6.21).
 

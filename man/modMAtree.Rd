@@ -10,10 +10,12 @@ modMAtree(
   estvar,
   estvar.filter = NULL,
   estseed = "none",
+  woodland = "Y",
   landarea = "FOREST",
   pcfilter = NULL,
   rowvar = NULL,
   colvar = NULL,
+  sumunits = FALSE,
   prednames = NULL,
   modelselect = FALSE,
   FIA = TRUE,
@@ -24,6 +26,7 @@ modMAtree(
   title_opts = NULL,
   savedata_opts = NULL,
   gui = FALSE,
+  modelselect_bydomain = FALSE,
   ...
 )
 }
@@ -42,6 +45,11 @@ syntax (e.g., 'STATUSCD == 1').}
 \item{estseed}{String. Use seedling data only or add to tree data. Seedling
 estimates are only for counts (estvar='TPA_UNADJ')-('none', 'only', 'add').}
 
+\item{woodland}{String. If woodland = 'Y', include woodland tree species
+where measured. If woodland = 'N', only include timber species. See 
+FIESTA::ref_species$WOODLAND ='Y/N'. If woodland = 'only', only include
+woodland species.}
+
 \item{landarea}{String. The condition-level filter for defining land area
 ('ALL', 'FOREST', 'TIMBERLAND'). If landarea='FOREST', COND_STATUS_CD = 1;
 if landarea='TIMBERLAND', SITECLCD in(1:6) & RESERVCD = 0.}
@@ -58,10 +66,15 @@ for the total estimation unit. Include colvar for grouping by 2 variables.}
 to group estvar by for columns in table output. Colvar must be included in
 an input data frame (i.e., plt, cond, tree).}
 
+\item{sumunits}{Logical. If TRUE, estimation units are summed and returned
+in one table.}
+
 \item{prednames}{String vector. Name(s) of predictor variables to include in
 model.}
 
-\item{modelselect}{Logical. If TRUE, variable selection occurs.}
+\item{modelselect}{Logical. If TRUE, an elastic net regression model is fit 
+to the entire plot level data, and the variables selected in that model are 
+used for the proceeding estimation.}
 
 \item{FIA}{Logical. If TRUE, the finite population term is removed from
 estimator to match FIA estimates.}
@@ -84,6 +97,10 @@ options.}
 of options. Only used when savedata = TRUE.}
 
 \item{gui}{Logical. If gui, user is prompted for parameters.}
+
+\item{modelselect_bydomain}{Logical. If TRUE, modelselection will occur at 
+the domain level as specified by rowvar and/or colvar and not at the level of
+the entire sample.}
 
 \item{...}{Parameters for modMApop() if MApopdat is NULL.}
 }

@@ -2,7 +2,8 @@
 % Please edit documentation in R/datSumTree.R
 \name{datSumTree}
 \alias{datSumTree}
-\title{Data - Aggregates numeric tree data to the plot or condition-level.}
+\title{Data - Aggregates tree and/or seedling data to the plot, condition,
+or subplot level.}
 \usage{
 datSumTree(
   tree = NULL,
@@ -25,6 +26,7 @@ datSumTree(
   tsumvarnmlst = NULL,
   addseed = FALSE,
   seedonly = FALSE,
+  woodland = "Y",
   TPA = TRUE,
   tfun = sum,
   ACI = FALSE,
@@ -37,7 +39,6 @@ datSumTree(
   adjTPA = 1,
   NAto0 = FALSE,
   tround = 5,
-  checkNA = FALSE,
   returnDT = TRUE,
   savedata = FALSE,
   savedata_opts = NULL,
@@ -52,7 +53,7 @@ datSumTree(
 \item{seed}{Dataframe or comma-delimited file (*.csv). The seedling table.}
 
 \item{cond}{Dataframe or comma-delimited file (*.csv). Condition-level table
-to join the aggregated tree data to, if bycond=TRUE. This table also may be
+to join the aggregated Ftree data to, if bycond=TRUE. This table also may be
 used for condition proportion or strata variables used if adjcond or
 adjstrata = TRUE (See details below).  This table is optional.}
 
@@ -110,6 +111,11 @@ tdomvar must be 'SPCD' or 'SPGRPCD'.}
 \item{seedonly}{Logical. If TRUE, seedling counts only. Note: tdomvar
 must be 'SPCD' or 'SPGRPCD'.}
 
+\item{woodland}{String. If woodland = 'Y', include woodland tree species
+where measured. If woodland = 'N', only include timber species. See 
+FIESTA::ref_species$WOODLAND ='Y/N'. If woodland = 'only', only include
+woodland species.}
+
 \item{TPA}{Logical. If TRUE, tsumvarlst variable(s) are multiplied by the
 respective trees-per-acre variable (see details) to get per-acre
 measurements.}
@@ -126,12 +132,12 @@ include condition table.}
 prompted.  Use tfilter="NONE" if no filters.}
 
 \item{lbs2tons}{Logical. If TRUE, converts biomass or carbon variables from
-pounds to tons. If metric=TRUE, converts to metric tons, else short tons.}
+pounds to tons (1 pound = 0.0005 short tons).}
 
 \item{metric}{Logical. If TRUE, converts response to metric units based on
 FIESTA::ref_conversion, if any variable in tsumvarlst is in
-FIESTAutils::ref_estvar.  Note: if TPA, TPA is converted to trees per hectare
-(TPH: 1 / (1/ tpavar * 0.4046860)).}
+FIESTAutils::ref_units.  Note: if TPA, TPA is converted to trees per hectare
+(TPH: 1/ tpavar * 0.4046860).}
 
 \item{getadjplot}{Logical. If TRUE, adjustments are calculated for
 nonsampled conditions on plot.}
@@ -151,9 +157,6 @@ for estimate, adjTPA=4. The default is 1.}
 
 \item{tround}{Number. The number of digits to round to. If NULL, default=5.}
 
-\item{checkNA}{Logical. If TRUE, checks if NA values exist in necessary
-variables.}
-
 \item{returnDT}{Logical. If TRUE, returns data.table object(s). If FALSE,
 returns data.frame object(s).}
 
@@ -170,25 +173,26 @@ default = 'treesum'.}
 \item{gui}{Logical. If gui, user is prompted for parameters.}
 }
 \value{
-A list of the following items: \item{treedat}{ Data frame. Plot or
-condition-level table with aggregated tree attributes. } \item{sumvars}{
-String vector. Name(s) of the output aggregated tree attributes. }
+A list of the following items: 
+\item{treedat}{ Data frame. Plot or condition-level table with aggregated 
+tree attributes. } 
+\item{sumvars}{ String vector. Name(s) of the output aggregated tree 
+attributes. }
+\item{tunitlst}{ String list. Units of output, when available. }
+\item{tfilter}{ String list. Filter used. }
+\item{meta}{ Data frame. Associated metadata, when available. }
 
 If savedata=TRUE\cr - treedat will be saved to the outfolder. \cr - a text
 file of input parameters is saved to outfolder
 ('outfn'_parameters_'date'.txt).
 }
 \description{
-Aggregates numeric tree-level data (e.g., VOLCFNET) to plot or condition,
-including options for filtering tree data or extrapolating to plot aseedonlycre by
-multiplying by TPA.
+Aggregates tree data (e.g., VOLCFNET) and/or seedling data (e.g., TPA_UNADJ) 
+to plot, condition, or subplot. Includes options for filtering tree data, 
+expanding to plot by multiplying by trees per acre (TPA_UNADJ), or adjusting 
+for nonresponse at the plot level (getadjplot).
 }
 \details{
-If variable = NULL, then it will prompt user for input.
-
-Dependent external functions: datFilter Dependent internal functions:
-addcommas, fileexistsnm, getadjfactor
-
 For adjcond (bycond=FALSE): \cr If you want to summarize trees-per-acre
 information aggregated to plot or condition level, you need to include a TPA
 variable in tree table. \cr For tsumvars = GROWCFGS, GROWBFSL, GROWCFAL,
@@ -206,6 +210,7 @@ If a dat table is provided, the aggregated tree data will be merged to
 table and NULL values will be output as 0.
 }
 \examples{
+\donttest{
 # Aggregate LIVE_CANOPY_CVR_PCT to plot, weighted by CONDPROP_UNADJ
 treesum <- datSumTree(tree = FIESTA::WYtree,
                       tsumvarlst = "TPA_UNADJ")$treedat
@@ -213,6 +218,7 @@ treesum <- datSumTree(tree = FIESTA::WYtree,
 # Check results
 treesum[treesum$PLT_CN == 40404737010690,]
 FIESTA::WYtree[FIESTA::WYtree$PLT_CN == 40404737010690,]
+}
 }
 \author{
 Tracey S. Frescino

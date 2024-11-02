@@ -13,11 +13,11 @@ spZonalRast(
   bands = NULL,
   zonalstat,
   pixelfun = NULL,
+  validate = FALSE,
   outname = NULL,
   showext = FALSE,
   rastlut = NULL,
   rast.NODATA = NULL,
-  na.rm = TRUE,
   savedata = FALSE,
   savedata_opts = NULL
 )
@@ -35,8 +35,8 @@ object.}
 \item{polyv.att}{String. Name of attribute in polyv to identify zones for
 summarizing raster statistics.}
 
-\item{rastfn}{String or Raster. File name(s) with extensions, or raster
-object(s).  Note: raster objects must be written to file.}
+\item{rastfn}{String or Raster. File name with extension, or raster
+object.  Note: raster objects must be written to file.}
 
 \item{rastfolder}{String. Name of the folder with raster layers. Optional.
 Useful if all raster layers are in same folder.}
@@ -53,6 +53,10 @@ with continuous data ("mean", "sum", "majority", "minority", "variety",
 before calculating sum and mean. The function should accept a single numeric
 argument (pixel value) and return a single numeric argument.}
 
+\item{validate}{Logical. If TRUE, validates polyv and clippolyv before 
+clipping. Uses sf::st_make_valid with default parameters 
+(geos_method='valid_structure', geos_keep_collapsed=FALSE).}
+
 \item{outname}{String. Variable name for output. The output names will use
 outname as a prefix to summary statistics (i.e., 'outname'.mean,
 'outname'.sum).}
@@ -62,11 +66,10 @@ outname as a prefix to summary statistics (i.e., 'outname'.mean,
 \item{rastlut}{Data frame. A look up table to recode raster values. Must be
 2 columns: Column 1 with raster values and column 2 with recode values.}
 
-\item{rast.NODATA}{Numeric. NODATA value or other values to ignore. These
-values will be removed from output zonal table. See notes below.}
-
-\item{na.rm}{Logical. If TRUE, Null values are removed before zonal
-statistic calculations.}
+\item{rast.NODATA}{Numeric. NODATA value (if not already defined) or other 
+values to ignore. These values will be removed from output zonal table. 
+NODATA values defined in raster are removed before zonal statistic 
+calculations.}
 
 \item{savedata}{Logical. If TRUE, the zonal data are saved to outfolder.}
 

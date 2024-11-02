@@ -11,7 +11,8 @@ spGetStates(
   stbnd.att = "COUNTYFIPS",
   RS = NULL,
   states = NULL,
-  overlap = 2,
+  overlap = 0.5,
+  clipbnd = FALSE,
   showsteps = FALSE,
   savebnd = FALSE,
   savedata_opts = NULL
@@ -38,9 +39,11 @@ included.}
 
 \item{overlap}{Number. Percent overlap to include.}
 
-\item{showsteps}{Logical. If yes, display intersecting boundaries.}
+\item{clipbnd}{Logical. If TRUE, clips boundary to state/RS restrictions.}
 
-\item{savebnd}{Logical. If yes, save boundary to outfolder.}
+\item{showsteps}{Logical. If TRUE, display intersecting boundaries.}
+
+\item{savebnd}{Logical. If TRUE, save boundary to outfolder.}
 
 \item{savedata_opts}{List. See help(savedata_options()) for a list
 of options. Only used when savebnd = TRUE.}

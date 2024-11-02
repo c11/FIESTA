@@ -21,6 +21,7 @@ modSApop(
   dunitzonal = NULL,
   prednames = NULL,
   predfac = NULL,
+  addxy = FALSE,
   returndata = TRUE,
   savedata = FALSE,
   saveobj = FALSE,
@@ -30,6 +31,7 @@ modSApop(
   SAdoms = NULL,
   smallbnd = NULL,
   smallbnd.domain = NULL,
+  largebnd.unique = NULL,
   SAdata = NULL,
   pltdat = NULL,
   auxdat = NULL,
@@ -89,6 +91,8 @@ model.}
 \item{predfac}{String vector. Name(s) of factor predictor variables to use
 in model. Names will change in output depending on number of categories.}
 
+\item{addxy}{Logical. If TRUE, adds X/Y attributes to pltassgn.}
+
 \item{returndata}{Logical. If TRUE, returns data objects.}
 
 \item{savedata}{Logical. If TRUE, saves table(s) to outfolder.}
@@ -107,6 +111,10 @@ of options.}
 \item{smallbnd}{sf object. small bound.}
 
 \item{smallbnd.domain}{String. Name of attribute defining domain attribute.}
+
+\item{largebnd.unique}{String. Name of the large boundary unique identifer
+to define plots within a model extent. If NULL, all plots are used for model
+extent.}
 
 \item{SAdata}{R List object. Output data list components from
 FIESTA::SAdata().}

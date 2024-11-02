@@ -18,11 +18,10 @@ DBgetPlots(
   issubp = FALSE,
   istree = TRUE,
   isseed = FALSE,
-  biojenk = FALSE,
   greenwt = FALSE,
-  plotgeom = FALSE,
+  addplotgeom = FALSE,
   othertables = NULL,
-  getxy = TRUE,
+  getxy = FALSE,
   xy_datsource = NULL,
   xy_dsn = NULL,
   xy = "PLOT",
@@ -43,6 +42,7 @@ DBgetPlots(
   alltFilter = NULL,
   returndata = TRUE,
   savedata = FALSE,
+  exportsp = FALSE,
   saveqry = FALSE,
   savePOP = FALSE,
   savedata_opts = NULL,
@@ -67,8 +67,12 @@ is populated. See FIESTA::ref_statecd for reference to RS and states.}
 \item{data_dsn}{String. If datsource='sqlite', the name of SQLite database
 (*.sqlite).}
 
-\item{dbTabs}{List of database tables the user would like returned.
-See help(dbTables) for a list of options.}
+\item{dbTabs}{List. Source of tables needed for estimation based on what
+is defined in eval_opts(Type). The source can be a layer in data_dsn or
+a comma delimited file. For example, if Type='P2VEG', vsubpspp_layer 
+and/or vsubpstr_layer must be defined. Defaults are 'P2VEG_SUBPLOT_SPP'
+and 'P2VEG_SUBP_STRUCTURE', respectively.
+ See help(dbTables) for a list of options.}
 
 \item{eval}{String. Type of evaluation time frame for data extraction 
 ('FIA', 'custom'). See eval_opts for more further options.}
@@ -91,11 +95,9 @@ database (SUBPLOT, SUBP_COND).}
 
 \item{isseed}{Logical. If TRUE, include seedling data.}
 
-\item{biojenk}{Logical. If TRUE, Jenkins biomass is calculated.}
-
 \item{greenwt}{Logical. If TRUE, green weight biomass is calculated.}
 
-\item{plotgeom}{Logical. If TRUE, variables from the PLOTGEOM table are
+\item{addplotgeom}{Logical. If TRUE, variables from the PLOTGEOM table are
 appended to the plot table.}
 
 \item{othertables}{String Vector. Name of other table(s) in FIADB to include
@@ -170,6 +172,8 @@ only plots with trees included in filter.}
 \item{savedata}{Logical. If TRUE, saves data to outfolder as comma-delimited
 file (*.csv).  No objects are returned. If FALSE, the data are saved as R
 objects and returned to user.  See details for caveats.}
+
+\item{exportsp}{Logical. If TRUE, and issp=TRUE, exports spatial plots.}
 
 \item{saveqry}{Logical. If TRUE, saves queries to outfolder (by state).}
 

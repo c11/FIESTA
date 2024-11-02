@@ -34,6 +34,10 @@ knitr::knit_hooks$set(
 )
 ```
 
+```{r, echo=-1}
+data.table::setDTthreads(2)
+```
+
 ## Small Area (SA) module overview
 
 `FIESTA`'s Small Area (SA) module was set up as a platform to integrate with current Small Area Estimators available on CRAN including the `JoSAE` (Breidenbach 2015), `sae` (Molina and Marhuenda 2015), and `hbsae` (Boonstra 2012) packages that use unit-level and area-level models such as the Empirical Best Linear Unbiased Prediction (EBLUP) estimation strategy and the hierarchical Bayesian estimation strategy. Rao (2003) discusses the benefits of the EBLUP for balancing potential bias of synthetic estimators against the instability of a direct estimator. White et al (2021) discusses the benefits of Small Area Estimation in a hierarchical Bayesian context, especially for forestry data. The module includes functional steps for checking, compiling, and formatting FIA plot data and auxiliary spatial information for input to R packages, such as `JoSAE` (Breidenbach 2015), `sae` (Molina and Marhuenda 2015), or `hbsae` (Boonstra 2012) and translates integrated package output to `FIESTA` output format. 
@@ -244,12 +248,14 @@ all_preds <- c("slp", "dem", "asp_cos", "asp_sin", "fornf")
 Next, we fit the unit-level EBLUP with the `JoSAE` R package. 
 
 ```{r}
+
 area1 <- modSAarea(
   SApopdatlst = SApopdat,        # pop - population calculations for WY, post-stratification
   prednames = all_preds,         # est - character vector of predictors to be used in the model
   SApackage = "JoSAE",           # est - character string of the R package to do the estimation
   SAmethod = "unit"              # est - method of small area estimation. Either "unit" or "area"
   )
+
 ```
 
 The `modSAarea` function outputs a list, and we can see our estimates and estimation method.
@@ -412,6 +418,7 @@ tree1 <- modSAtree(
     estvar = estvar,             # est - net cubic-foot volume
     estvar.filter = live_trees   # est - live trees only
     )
+
 ```
 
 With both `modSAtree` and `modSAarea`, `FIESTA` will return your requested estimates specified with the `SApackage` and `SAmethod` arguments in the `est` item, but will return all possible estimates in the `multest` item. We can see these estimates below:

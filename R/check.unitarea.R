@@ -49,7 +49,7 @@ check.unitarea <- function(unitarea, pltx, unitvars, areavar="ACRES",
         } else {
           ## Check unitarea
           unitarea <- pcheck.table(unitarea, gui=gui, tabnm="unitarea",
-			nullcheck=TRUE, stopifnull=TRUE)
+			                nullcheck=TRUE, stopifnull=TRUE)
         }
       }
     }
@@ -74,7 +74,7 @@ check.unitarea <- function(unitarea, pltx, unitvars, areavar="ACRES",
       }
       ## Check areavar from strata table.
       areavar <- pcheck.varchar(var2check=areavar, varnm="areavar", gui=gui,
-		checklst=names(unitarea), caption="Area variable?", stopifnull=TRUE)
+		                checklst=names(unitarea), caption="Area variable?", stopifnull=TRUE)
 
       if (nrow(unitarea) >  1) {
         if (length(unitvars) == 1) {
@@ -142,7 +142,8 @@ check.unitarea <- function(unitarea, pltx, unitvars, areavar="ACRES",
     unitarea <- check.matchval(unitarea, pltx, unitvars,
 		tab1txt=removetext, tab2txt="plt", subsetrows=removeunits)
 
-    if (!is.null(vars2keep) && all(vars2keep %in% names(unitarea))) {
+    vars2keep <- vars2keep[vars2keep %in% names(unitarea)]
+    if (length(vars2keep) > 0) {
       ## Sum area by unitvars
       unitarea <- unitarea[, lapply(.SD, sum, na.rm=TRUE), 
            by=c(unitvars, vars2keep), .SDcols=areavar]
